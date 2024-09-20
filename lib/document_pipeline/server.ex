@@ -92,7 +92,6 @@ defmodule DocumentPipeline.Server do
         {[tuple | acc], cwd}
       end)
 
-    IO.inspect(script_tuples, label: "script_tuples")
     Enum.reverse(script_tuples)
   end
 
@@ -116,7 +115,7 @@ defmodule DocumentPipeline.Server do
   end
 
   defp run_script(script_path, args, cwd) do
-    IO.puts("Suoritetaan: #{script_path} #{args}")
+    # IO.puts("Suoritetaan: #{script_path} #{args}")
 
     File.mkdir_p!(cwd)
 
@@ -128,11 +127,11 @@ defmodule DocumentPipeline.Server do
       end
 
     if exit_code == 0 do
-      IO.puts("Skripti suoritettu onnistuneesti: #{script_path}")
+      # IO.puts("Skripti suoritettu onnistuneesti: #{script_path}")
       :ok
     else
-      IO.puts("Virhe suoritettaessa skriptiä: #{script_path}")
-      IO.puts("Virheilmoitus: #{output}")
+      # IO.puts("Virhe suoritettaessa skriptiä: #{script_path}")
+      # IO.puts("Virheilmoitus: #{output}")
       {:error, output}
     end
   end
