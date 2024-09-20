@@ -21,9 +21,9 @@ defmodule DocumentPipeline.Server do
   end
 
   # Julkinen funktio pipeline-suorituksen aloittamiseen
-  def run_pipeline(pid) do
+  def run_pipeline(pid, client_pid \\ self()) do
     # Välitetään asiakkaan pid GenServerille
-    GenServer.cast(pid, {:run_pipeline, self()})
+    GenServer.cast(pid, {:run_pipeline, client_pid})
   end
 
   ## Server Callbacks

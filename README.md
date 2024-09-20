@@ -6,6 +6,12 @@ Test run:
 mix run --no-halt -e "DocumentPipeline.Client.start_pipeline()"
 ```
 
+Via web endpoint:
+```sh
+mix phx.server
+curl -N -X POST http://localhost:4000/run_pipeline
+```
+
 ## Installation
 
 If [available in Hex](https://hex.pm/docs/publish), the package can be installed
