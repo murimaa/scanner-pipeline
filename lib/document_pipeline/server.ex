@@ -12,6 +12,14 @@ defmodule DocumentPipeline.Server do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
+  def child_spec(_opts) do
+    %{
+      id: __MODULE__,
+      start: {GenServer, :start_link, [__MODULE__, :ok, []]},
+      restart: :temporary
+    }
+  end
+
   # Julkinen funktio pipeline-suorituksen aloittamiseen
   def run_pipeline(pid) do
     # Välitetään asiakkaan pid GenServerille

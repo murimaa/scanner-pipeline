@@ -1,8 +1,8 @@
 defmodule DocumentPipeline.Client do
   @timeout_seconds 600
   def start_pipeline do
-    # Käynnistetään GenServer
-    {:ok, pid} = DocumentPipeline.Server.start_link()
+    # Käynnistetään GenServer DynamicSupervisorin kautta
+    {:ok, pid} = DocumentPipeline.DynamicSupervisor.start_child()
 
     # Aloitetaan pipeline-suoritus ja välitetään oma pid
     DocumentPipeline.Server.run_pipeline(pid)
