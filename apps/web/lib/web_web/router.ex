@@ -2,26 +2,36 @@ defmodule WebWeb.Router do
   use WebWeb, :router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {WebWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_live_flash)
+    plug(:put_root_layout, html: {WebWeb.Layouts, :root})
+    plug(:protect_from_forgery)
+    plug(:put_secure_browser_headers)
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug(:accepts, ["json"])
+  end
+
+  pipeline :event_stream do
+    plug(:accepts, ["event-stream"])
   end
 
   scope "/", WebWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    get "/", PageController, :home
+    get("/", PageController, :home)
   end
-  scope "/", WebWeb do
-    pipe_through :api
-    post "/run_pipeline", PipelineController, :run
+
+  scope "/api", WebWeb do
+    pipe_through(:api)
+    post("/pipeline/run", PipelineController, :run)
+  end
+
+  scope "/api", WebWeb do
+    pipe_through(:event_stream)
+    get("/pipeline/stream_status", PipelineController, :stream_status)
   end
 
   # Other scopes may use custom stacks.
@@ -35,14 +45,14 @@ defmodule WebWeb.Router do
     # it behind authentication and allow only admins to access it.
     # If your application does not have an admins-only section yet,
     # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
+    # as long as you are also using SSL (which you should anyway)curl -N http://localhost:4000/stream_status.
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: WebWeb.Telemetry
-      forward "/mailbox", Plug.Swoosh.MailboxPreview
+      live_dashboard("/dashboard", metrics: WebWeb.Telemetry)
+      forward("/mailbox", Plug.Swoosh.MailboxPreview)
     end
   end
 end

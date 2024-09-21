@@ -5,8 +5,8 @@ defmodule DocumentPipeline.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: DocumentPipeline.PipelineRegistry},
-      DocumentPipeline.DynamicSupervisor,
-      {DocumentPipeline.MessageHandler, name: DocumentPipeline.MessageHandler}
+      {Phoenix.PubSub, name: DocumentPipeline.PubSub},
+      DocumentPipeline.DynamicSupervisor
     ]
 
     opts = [strategy: :one_for_one, name: DocumentPipeline.Supervisor]

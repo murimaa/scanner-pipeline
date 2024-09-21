@@ -21,6 +21,11 @@ config :web, WebWeb.Endpoint,
   pubsub_server: Web.PubSub,
   live_view: [signing_salt: "dcllfVe1"]
 
+config :mime, :types, %{
+  "application/json" => ["json"],
+  "text/event-stream" => ["event-stream"]
+}
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails

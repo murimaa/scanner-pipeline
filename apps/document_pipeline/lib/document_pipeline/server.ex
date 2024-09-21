@@ -1,5 +1,7 @@
 defmodule DocumentPipeline.Server do
   use GenServer
+  @pubsub DocumentPipeline.PubSub
+  @topic "pipeline_messages"
 
   @scripts_path Path.absname("scripts")
   @input_path Path.absname("test_input")
@@ -84,22 +86,24 @@ defmodule DocumentPipeline.Server do
   end
 
   defp run_scripts(execution_id, scripts_with_args, client_pid) do
+    send_progress(client_pid, execution_id, %{event: :pipeline_started})
+
     Enum.each(scripts_with_args, fn {script, args, cwd} ->
-      send_progress(client_pid, execution_id, {:script_started, script})
+      send_progress(client_pid, execution_id, %{event: :script_started, script: script})
 
       case run_script(script, args, cwd) do
         :ok ->
-          send_progress(client_pid, execution_id, {:script_finished, script})
+          send_progress(client_pid, execution_id, %{event: :script_finished, script: script})
 
         {:error, reason} ->
-          send_progress(client_pid, execution_id, {:script_failed, script, reason})
-          send_progress(client_pid, execution_id, {:pipeline_failed, reason})
+          send_progress(client_pid, execution_id, %{event: :script_failed, script: script})
+          send_progress(client_pid, execution_id, %{event: :pipeline_failed})
           # Lopetetaan suorituksen jatkaminen
           exit(reason)
       end
     end)
 
-    send_progress(client_pid, execution_id, :pipeline_finished)
+    send_progress(client_pid, execution_id, %{event: :pipeline_finished})
   end
 
   defp run_script(script_path, args, cwd) do
@@ -127,6 +131,6 @@ defmodule DocumentPipeline.Server do
   defp send_progress(client_pid, execution_id, message) do
     # TODO: remove this, and related logic (client_pid)
     send(client_pid, message)
-    DocumentPipeline.MessageHandler.relay_message(execution_id, message)
+    Phoenix.PubSub.broadcast(@pubsub, @topic, {:pipeline_message, execution_id, message})
   end
 end
