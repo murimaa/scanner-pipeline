@@ -9,15 +9,15 @@ defmodule DocumentPipeline.MessageHandler do
     {:ok, %{}}
   end
 
-  def handle_cast({:relay_message, message}, state) do
+  def handle_cast({:relay_message, execution_id, message}, state) do
     # Logic to send the message to the appropriate client
     # This could involve WebSockets, Phoenix PubSub, or other mechanisms
-    IO.inspect(message, label: "Relayed message")
+    IO.inspect(message, label: "#{execution_id} relayed message")
     {:noreply, state}
   end
 
   # Client API
-  def relay_message(message) do
-    GenServer.cast(__MODULE__, {:relay_message, message})
+  def relay_message(execution_id, message) do
+    GenServer.cast(__MODULE__, {:relay_message, execution_id, message})
   end
 end

@@ -4,6 +4,7 @@ defmodule DocumentPipeline.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {Registry, keys: :unique, name: DocumentPipeline.PipelineRegistry},
       DocumentPipeline.DynamicSupervisor,
       {DocumentPipeline.MessageHandler, name: DocumentPipeline.MessageHandler}
     ]

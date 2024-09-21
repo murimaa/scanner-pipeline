@@ -5,8 +5,7 @@ defmodule WebWeb.PipelineController do
     my_pid = self()
 
     Task.start(fn ->
-      {:ok, pid} = DocumentPipeline.DynamicSupervisor.start_child()
-      DocumentPipeline.Server.run_pipeline(pid, my_pid)
+      {:ok, _pid} = DocumentPipeline.DynamicSupervisor.start_child(my_pid)
     end)
 
     conn =

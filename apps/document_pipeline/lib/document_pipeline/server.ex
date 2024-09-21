@@ -7,42 +7,49 @@ defmodule DocumentPipeline.Server do
   @output_path Path.absname("test_output")
   ## Client API
 
-  # Käynnistää GenServerin
-  def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, :ok, opts)
+  def start_link(client_pid \\ self(), execution_id \\ nil) do
+    execution_id =
+      if execution_id == nil do
+        for _ <- 1..20, into: "", do: <<Enum.random(~c"0123456789abcdef")>>
+      else
+        execution_id
+      end
+
+    GenServer.start_link(__MODULE__, {execution_id, client_pid}, name: via_tuple(execution_id))
   end
 
-  def child_spec(_opts) do
+  def child_spec({execution_id, client_pid}) do
     %{
-      id: __MODULE__,
-      start: {GenServer, :start_link, [__MODULE__, :ok, []]},
+      id: {__MODULE__, execution_id},
+      start: {__MODULE__, :start_link, [execution_id, client_pid]},
       restart: :temporary
     }
   end
 
-  # Julkinen funktio pipeline-suorituksen aloittamiseen
-  def run_pipeline(pid, client_pid \\ self()) do
-    # Välitetään asiakkaan pid GenServerille
-    GenServer.cast(pid, {:run_pipeline, client_pid})
+  def run_pipeline(execution_id, client_pid \\ self()) do
+    GenServer.cast(via_tuple(execution_id), {:run_pipeline, client_pid})
   end
 
   ## Server Callbacks
 
-  def init(:ok) do
-    {:ok, %{}}
+  def init({execution_id, client_pid}) do
+    {:ok, %{execution_id: execution_id, client_pid: client_pid}, {:continue, :run_pipeline}}
   end
 
-  def handle_cast({:run_pipeline, client_pid}, state) do
-    execution_id = for _ <- 1..20, into: "", do: <<Enum.random(~c"0123456789abcdef")>>
+  def handle_continue(
+        :run_pipeline,
+        %{execution_id: execution_id, client_pid: client_pid} = state
+      ) do
     scripts_with_args = get_scripts(execution_id)
-
-    # Suoritetaan pipeline suoraan GenServerin sisällä
-    run_scripts(scripts_with_args, client_pid)
-
+    run_scripts(execution_id, scripts_with_args, client_pid)
     {:noreply, state}
   end
 
-  ## Apu-funktiot
+  ## Helper Functions
+
+  defp via_tuple(execution_id) do
+    {:via, Registry, {DocumentPipeline.PipelineRegistry, execution_id}}
+  end
 
   defp get_scripts(execution_id) do
     scripts =
@@ -76,23 +83,23 @@ defmodule DocumentPipeline.Server do
     Enum.reverse(script_tuples)
   end
 
-  defp run_scripts(scripts_with_args, client_pid) do
+  defp run_scripts(execution_id, scripts_with_args, client_pid) do
     Enum.each(scripts_with_args, fn {script, args, cwd} ->
-      send_progress(client_pid, {:script_started, script})
+      send_progress(client_pid, execution_id, {:script_started, script})
 
       case run_script(script, args, cwd) do
         :ok ->
-          send_progress(client_pid, {:script_finished, script})
+          send_progress(client_pid, execution_id, {:script_finished, script})
 
         {:error, reason} ->
-          send_progress(client_pid, {:script_failed, script, reason})
-          send_progress(client_pid, {:pipeline_failed, reason})
+          send_progress(client_pid, execution_id, {:script_failed, script, reason})
+          send_progress(client_pid, execution_id, {:pipeline_failed, reason})
           # Lopetetaan suorituksen jatkaminen
           exit(reason)
       end
     end)
 
-    send_progress(client_pid, :pipeline_finished)
+    send_progress(client_pid, execution_id, :pipeline_finished)
   end
 
   defp run_script(script_path, args, cwd) do
@@ -117,8 +124,9 @@ defmodule DocumentPipeline.Server do
     end
   end
 
-  defp send_progress(client_pid, message) do
+  defp send_progress(client_pid, execution_id, message) do
+    # TODO: remove this, and related logic (client_pid)
     send(client_pid, message)
-    DocumentPipeline.MessageHandler.relay_message(message)
+    DocumentPipeline.MessageHandler.relay_message(execution_id, message)
   end
 end
