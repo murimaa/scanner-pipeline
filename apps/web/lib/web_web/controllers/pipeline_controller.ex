@@ -51,8 +51,8 @@ defmodule WebWeb.PipelineController do
         chunk(conn, "#{json}\n")
         {:ok, conn}
     after
-      60_000 ->
-        json = Jason.encode!(%{event: "timeout", message: "No updates received for 60 seconds"})
+      600_000 ->
+        json = Jason.encode!(%{event: "timeout", message: "No updates received for 600 seconds"})
         chunk(conn, "#{json}\n")
         {:ok, conn}
     end

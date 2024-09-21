@@ -76,25 +76,6 @@ defmodule DocumentPipeline.Server do
     Enum.reverse(script_tuples)
   end
 
-  defp get_scripts(execution_id) do
-    scripts =
-      Path.wildcard(Path.join(@scripts_path, "*.sh"))
-      |> Enum.sort()
-
-    {script_tuples, _} =
-      Enum.reduce(scripts, {[], @input_path}, fn script, {acc, prev_cwd} ->
-        script_name = script |> Path.rootname() |> Path.basename()
-        cwd = Path.join([@tmp_dir, execution_id, script_name])
-
-        # Luodaan tuple {script, args, cwd}
-        tuple = {script, prev_cwd, cwd}
-
-        {[tuple | acc], cwd}
-      end)
-
-    Enum.reverse(script_tuples)
-  end
-
   defp run_scripts(scripts_with_args, client_pid) do
     Enum.each(scripts_with_args, fn {script, args, cwd} ->
       send_progress(client_pid, {:script_started, script})
@@ -138,5 +119,6 @@ defmodule DocumentPipeline.Server do
 
   defp send_progress(client_pid, message) do
     send(client_pid, message)
+    DocumentPipeline.MessageHandler.relay_message(message)
   end
 end

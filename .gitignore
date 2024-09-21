@@ -23,4 +23,5 @@ erl_crash.dump
 document_pipeline-*.tar
 
 # Temporary files, for example, from tests.
-/tmp/
+**/tmp/
+**/test_*/
