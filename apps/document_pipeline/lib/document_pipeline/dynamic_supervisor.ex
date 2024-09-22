@@ -10,8 +10,8 @@ defmodule DocumentPipeline.DynamicSupervisor do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 
-  def start_child(execution_id \\ nil, client_pid \\ nil) do
-    spec = {DocumentPipeline.Server, {execution_id, client_pid}}
+  def start_child(pipeline, input_path, output_path) do
+    spec = {DocumentPipeline.Server, {pipeline, input_path, output_path}}
     DynamicSupervisor.start_child(__MODULE__, spec)
   end
 end
