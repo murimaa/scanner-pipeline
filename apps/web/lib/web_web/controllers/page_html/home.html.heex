@@ -1,7 +1,7 @@
 <div id="app">
   <h1>Pipeline Runner</h1>
   <button id="runButton">Run Pipeline</button>
-  <div id="status"></div>
+  <pre id="status"></pre>
 </div>
 
 <script>
@@ -9,48 +9,122 @@
     const runButton = document.getElementById('runButton');
     const statusDiv = document.getElementById('status');
     let eventSource;
+    let spinnerInterval;
+    const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    let currentSpinnerIndex = 0;
+    let currentStatus = null;
 
     connectToEventStream();
 
     runButton.addEventListener('click', () => {
-      // runButton.disabled = true;
-      statusDiv.innerHTML += '<br>Starting pipeline...';
+      runButton.disabled = true;
+      appendStatus('Starting pipeline...');
 
       fetch('/api/pipeline/run', { method: 'POST' })
         .then(response => response.json())
-        .then(data => {
-          statusDiv.innerHTML += '<br>Pipeline started.';
-          // We connect automatically.
-          // connectToEventStream();
-        })
+
         .catch(error => {
-          statusDiv.innerHTML += '<br>Error starting pipeline: ' + error;
+          appendStatus('Error starting pipeline: ' + error, 'red');
           runButton.disabled = false;
         });
     });
 
     function connectToEventStream() {
-      statusDiv.innerHTML += '<br>Connecting to status stream...';
+      appendStatus('Connecting to status stream...');
 
       eventSource = new EventSource('/api/pipeline/stream_status');
 
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        statusDiv.innerHTML += '<br>' + JSON.stringify(data);
-
-        if (data.event === 'pipeline_finished' || data.event === 'pipeline_failed') {
-          // We do not close the connection
-          // eventSource.close();
-          runButton.disabled = false;
-        }
+        handleStatusUpdate(data);
       };
 
       eventSource.onerror = (error) => {
-        statusDiv.innerHTML += '<br>Error in status stream: ' + error;
-        statusDiv.innerHTML += '<br>Closing stream. Please refresh.';
+        appendStatus('Error in status stream: ' + error, 'red');
+        appendStatus('Closing stream. Please refresh.', 'red');
         eventSource.close();
-        // runButton.disabled = false;
+        stopSpinner();
       };
+    }
+
+    function handleStatusUpdate(data) {
+      switch(data.event) {
+        case 'script_started':
+          if (currentStatus && currentStatus.status === 'started') {
+            updateStatus('✓', 'green');
+          }
+          currentStatus = { script: data.script, status: 'started' };
+          appendStatus(formatStatus(spinnerFrames[currentSpinnerIndex]), 'blue', true);
+          startSpinner();
+          break;
+        case 'script_finished':
+          stopSpinner();
+          currentStatus.status = 'finished';
+          updateStatus('✓', 'green');
+          currentStatus = null;
+          break;
+        case 'script_failed':
+          stopSpinner();
+          currentStatus.status = 'failed';
+          updateStatus('✗', 'red');
+          appendStatus(`Script failed: ${data.script}`, 'red');
+          appendStatus(`Reason: ${data.reason}`, 'red');
+          currentStatus = null;
+          break;
+        case 'pipeline_failed':
+          appendStatus(`Pipeline failed: ${data.reason}`, 'red');
+          stopSpinner();
+          runButton.disabled = false;
+          break;
+        case 'pipeline_finished':
+          appendStatus('Pipeline completed successfully.', 'green');
+          stopSpinner();
+          runButton.disabled = false;
+          break;
+      }
+    }
+
+    function startSpinner() {
+      if (!spinnerInterval) {
+        spinnerInterval = setInterval(() => {
+          currentSpinnerIndex = (currentSpinnerIndex + 1) % spinnerFrames.length;
+          updateStatus(spinnerFrames[currentSpinnerIndex], 'blue');
+        }, 100);
+      }
+    }
+
+    function stopSpinner() {
+      if (spinnerInterval) {
+        clearInterval(spinnerInterval);
+        spinnerInterval = null;
+      }
+    }
+
+    function formatStatus(prefix) {
+      if (currentStatus) {
+        return `${prefix} ${currentStatus.script}: ${currentStatus.status}`;
+      }
+      return '';
+    }
+
+    function updateStatus(prefix, color) {
+      const currentStatusLine = statusDiv.querySelector('.current-status');
+      if (currentStatusLine) {
+        currentStatusLine.innerHTML = `<span style="color: ${color}">${formatStatus(prefix)}</span>`;
+        if (currentStatus.status !== 'started') {
+          currentStatusLine.classList.remove('current-status');
+        }
+      }
+    }
+
+    function appendStatus(message, color = 'black', isCurrentStatus = false) {
+      const line = document.createElement('div');
+      line.innerHTML = `<span style="color: ${color}">${message}</span>`;
+      if (isCurrentStatus) {
+        line.classList.add('current-status');
+      }
+      statusDiv.appendChild(line);
+      statusDiv.scrollTop = statusDiv.scrollHeight;
     }
   });
 </script>

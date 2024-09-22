@@ -11,7 +11,7 @@ if [ ! -d "$1" ]; then
     echo "Lähdehakemistoa ei löydy: $1"
     exit 1
 fi
-
+sleep 1
 # Kopioi kaikki tiedostot ja alihakemistot argumentin hakemistosta nykyiseen
 cp -r "$1"/* .
 
