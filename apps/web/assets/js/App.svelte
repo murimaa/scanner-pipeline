@@ -1,21 +1,22 @@
 <script>
-  import PipelineRunner from './PipelineRunner.svelte';
+    import PipelineRunner from "./PipelineRunner.svelte";
 </script>
 
 <main>
-  <h1>Pipeline Runner</h1>
-  <PipelineRunner />
+    <h1>Pipeline Runner</h1>
+    <PipelineRunner />
 </main>
 
 <style>
-  main {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-  }
+    main {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
 
-  h1 {
-    text-align: center;
-    color: #333;
-  }
+    h1 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
 </style>
