@@ -1,168 +1,109 @@
 <script>
-    import { onMount } from "svelte";
-    import {
-        currentStatus,
-        statusMessages,
-        isRunning,
-        pipelineStatus,
-    } from "./store.js";
+    import { onMount, onDestroy } from "svelte";
+    import { isRunning, pipelineStatus, scriptStatuses } from "./store.js";
     import RunButton from "./RunButton.svelte";
     import StatusDisplay from "./StatusDisplay.svelte";
     import PipelineStatus from "./PipelineStatus.svelte";
+    import { createEventSourceManager } from "./eventSourceManager.js";
+    import { RECONNECT_DELAY, API_ENDPOINTS } from "./constants.js";
 
-    const spinnerFrames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-    let eventSource;
-    let currentSpinnerIndex = 0;
-    let spinnerInterval;
-    const RECONNECT_DELAY = 5000; // 5 seconds
+    let eventSourceManager;
 
     onMount(() => {
-        connectToEventStream();
+        eventSourceManager = createEventSourceManager(
+            API_ENDPOINTS.STREAM_STATUS,
+            handleStatusUpdate,
+            handleEventSourceOpen,
+            handleEventSourceError,
+            RECONNECT_DELAY,
+        );
+        eventSourceManager.connect();
+
         return () => {
-            if (eventSource) eventSource.close();
-            if (reconnectTimeout) clearTimeout(reconnectTimeout);
-            if (spinnerInterval) clearInterval(spinnerInterval);
+            eventSourceManager.disconnect();
         };
     });
 
-    function connectToEventStream() {
-        if (eventSource) {
-            eventSource.close();
-        }
+    function handleEventSourceOpen() {
+        appendPipelineStatus("Connected to status stream");
+    }
 
-        $pipelineStatus = [
-            ...$pipelineStatus,
-            `Connecting to status stream...`,
-        ];
-
-        eventSource = new EventSource("/api/pipeline/stream_status");
-
-        eventSource.onopen = () => {
-            $pipelineStatus = [
-                ...$pipelineStatus,
-                `Connected to status stream`,
-            ];
-            if (reconnectTimeout) {
-                clearTimeout(reconnectTimeout);
-                reconnectTimeout = null;
-            }
-        };
-
-        eventSource.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            handleStatusUpdate(data);
-        };
-
-        eventSource.onerror = (error) => {
-            $pipelineStatus = [
-                ...$pipelineStatus,
-                `Error in status stream: ${error}. Attempting to reconnect...`,
-            ];
-            eventSource.close();
-            reconnectTimeout = setTimeout(
-                connectToEventStream,
-                RECONNECT_DELAY,
-            );
-        };
+    function handleEventSourceError(error) {
+        appendPipelineStatus(
+            `Error in status stream: ${error}. Attempting to reconnect...`,
+        );
     }
 
     function handleStatusUpdate(data) {
         switch (data.event) {
             case "script_started":
-                if ($currentStatus && $currentStatus.status === "started") {
-                    updateStatus("✓", "green");
-                }
-                $currentStatus = { script: data.script, status: "started" };
-                appendStatus(
-                    formatStatus(spinnerFrames[currentSpinnerIndex]),
-                    "blue",
-                    true,
-                );
-                startSpinner();
+                handleScriptStarted(data.script);
                 break;
             case "script_finished":
-                stopSpinner();
-                $currentStatus.status = "finished";
-                updateStatus("✓", "green");
-                $currentStatus = null;
+                handleScriptFinished(data.script);
                 break;
             case "script_failed":
-                stopSpinner();
-                $currentStatus.status = "failed";
-                updateStatus("✗", "red");
-                appendStatus(`Script failed: ${data.script}`, "red");
-                appendStatus(`Reason: ${data.reason}`, "red");
-                $currentStatus = null;
+                handleScriptFailed(data.script, data.reason);
                 break;
             case "pipeline_failed":
-                $pipelineStatus = [
-                    ...$pipelineStatus,
-                    `Pipeline failed: ${data.reason}`,
-                ];
-                stopSpinner();
-                $isRunning = false;
+                handlePipelineFailed(data.reason);
                 break;
             case "pipeline_finished":
-                $pipelineStatus = [
-                    ...$pipelineStatus,
-                    "Pipeline completed successfully.",
-                ];
-                stopSpinner();
-                $isRunning = false;
+                handlePipelineFinished();
                 break;
         }
     }
 
-    function startSpinner() {
-        if (!spinnerInterval) {
-            spinnerInterval = setInterval(() => {
-                currentSpinnerIndex =
-                    (currentSpinnerIndex + 1) % spinnerFrames.length;
-                updateStatus(spinnerFrames[currentSpinnerIndex], "blue");
-            }, 100);
-        }
+    function handleScriptStarted(script) {
+        $scriptStatuses = [
+            ...$scriptStatuses.map((s) => ({ ...s, isCurrentStatus: false })),
+            {
+                id: Date.now(),
+                script,
+                status: "running",
+                isCurrentStatus: true,
+            },
+        ];
     }
 
-    function stopSpinner() {
-        if (spinnerInterval) {
-            clearInterval(spinnerInterval);
-            spinnerInterval = null;
-        }
-    }
-
-    function formatStatus(prefix) {
-        if ($currentStatus) {
-            return `${prefix} ${$currentStatus.script}: ${$currentStatus.status}`;
-        }
-        return "";
-    }
-
-    function updateStatus(prefix, color) {
-        $statusMessages = $statusMessages.map((msg, index) =>
-            index === $statusMessages.length - 1 && msg.isCurrentStatus
-                ? { ...msg, message: formatStatus(prefix), color }
-                : msg,
+    function handleScriptFinished(script) {
+        $scriptStatuses = $scriptStatuses.map((s) =>
+            s.script === script
+                ? { ...s, status: "finished", isCurrentStatus: false }
+                : s,
         );
     }
 
-    function appendStatus(message, color = "black", isCurrentStatus = false) {
-        $statusMessages = [
-            ...$statusMessages,
-            { message, color, isCurrentStatus },
-        ];
+    function handleScriptFailed(script, reason) {
+        $scriptStatuses = $scriptStatuses.map((s) =>
+            s.script === script
+                ? { ...s, status: "failed", reason, isCurrentStatus: false }
+                : s,
+        );
+    }
+
+    function handlePipelineFailed(reason) {
+        appendPipelineStatus(`Pipeline failed: ${reason}`);
+        $isRunning = false;
+    }
+
+    function handlePipelineFinished() {
+        appendPipelineStatus("Pipeline completed successfully.");
+        $isRunning = false;
+    }
+
+    function appendPipelineStatus(message) {
+        $pipelineStatus = [...$pipelineStatus, { message }];
     }
 
     async function runPipeline() {
         $isRunning = true;
-        $pipelineStatus = [...$pipelineStatus, "Starting pipeline..."];
+        appendPipelineStatus("Starting pipeline...");
 
         try {
-            await fetch("/api/pipeline/run", { method: "POST" });
+            await fetch(API_ENDPOINTS.RUN_PIPELINE, { method: "POST" });
         } catch (error) {
-            $pipelineStatus = [
-                ...$pipelineStatus,
-                `Error starting pipeline: ${error}`,
-            ];
+            appendPipelineStatus(`Error starting pipeline: ${error}`);
             $isRunning = false;
         }
     }

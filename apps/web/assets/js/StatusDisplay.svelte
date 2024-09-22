@@ -1,30 +1,11 @@
 <script>
-    import { statusMessages } from "./store.js";
-
-    $: sortedMessages = $statusMessages.sort((a, b) =>
-        a.isCurrentStatus ? 1 : b.isCurrentStatus ? -1 : 0,
-    );
-
-    function getStatusSymbol(status) {
-        switch (status) {
-            case "finished":
-                return "✓";
-            case "failed":
-                return "✗";
-            default:
-                return "⏳";
-        }
-    }
+    import { formattedStatuses } from "./store.js";
+    import StatusRow from "./StatusRow.svelte";
 </script>
 
 <div class="status-display">
-    {#each sortedMessages as { message, color, isCurrentStatus, status }}
-        <div class:current-status={isCurrentStatus}>
-            <span style="color: {color}">
-                {#if status}{getStatusSymbol(status)}{/if}
-                {message}
-            </span>
-        </div>
+    {#each $formattedStatuses as status (status.id)}
+        <StatusRow {...status} />
     {/each}
 </div>
 
@@ -37,12 +18,5 @@
         border: 1px solid #ccc;
         padding: 10px;
         font-family: monospace;
-    }
-    .current-status {
-        font-weight: bold;
-    }
-    div {
-        margin: 0;
-        padding: 0;
     }
 </style>

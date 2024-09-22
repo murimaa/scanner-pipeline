@@ -1,7 +1,7 @@
 <script>
     import { pipelineStatus } from "./store.js";
 
-    function getStatusColor(message) {
+    function getStatusColor({ message }) {
         if (message.includes("failed")) return "red";
         if (message.includes("completed")) return "green";
         return "blue";
@@ -11,7 +11,7 @@
 <div class="pipeline-status">
     {#each $pipelineStatus as status}
         <div style="color: {getStatusColor(status)}">
-            {status}
+            {status.message}
         </div>
     {/each}
 </div>
