@@ -22,6 +22,9 @@ erl_crash.dump
 # Ignore package tarball (built via "mix hex.build").
 document_pipeline-*.tar
 
+# Ignore Node.js module for Inertia.js SSR
+/priv/ssr.js
+
 # Temporary files, for example, from tests.
 **/tmp/
 **/test_*/
