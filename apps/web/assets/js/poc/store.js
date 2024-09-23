@@ -10,14 +10,12 @@ export const scriptStatuses = writable([]);
 export const formattedStatuses = derived(scriptStatuses, ($scriptStatuses) => {
   return Object.values(
     $scriptStatuses.reduce((acc, status) => {
-      const key = `${status.executionId}-${status.script}`;
+      const key = `${status.execution_id}-${status.pipeline}-${status.script}`;
+      console.log(key);
       acc[key] = {
+        ...status,
         key: key,
-        executionId: status.executionId,
-        script: status.script,
         text: `${status.script}: ${status.status}`,
-        status: status.status,
-        isCurrentStatus: status.isCurrentStatus,
       };
       return acc;
     }, {}),

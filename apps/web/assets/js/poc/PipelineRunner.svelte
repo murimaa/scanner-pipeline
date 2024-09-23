@@ -38,49 +38,47 @@
     function handleStatusUpdate(data) {
         switch (data.event) {
             case "script_started":
-                handleScriptStarted(data.execution_id, data.script);
+                handleScriptStarted(data);
                 break;
             case "script_finished":
-                handleScriptFinished(data.execution_id, data.script);
+                handleScriptFinished(data);
                 break;
             case "script_failed":
-                handleScriptFailed(data.execution_id, data.script, data.reason);
+                handleScriptFailed(data);
                 break;
             case "pipeline_failed":
-                handlePipelineFailed(data.execution_id, data.reason);
+                handlePipelineFailed(data);
                 break;
             case "pipeline_finished":
-                handlePipelineFinished(data.execution_id);
+                handlePipelineFinished(data);
                 break;
         }
     }
 
-    function handleScriptStarted(executionId, script) {
-        console.log("started", script);
-
+    function handleScriptStarted(data) {
         $scriptStatuses = [
             ...$scriptStatuses.map((s) => ({ ...s, isCurrentStatus: false })),
             {
-                executionId: executionId,
-                script,
+                ...data,
                 status: "running",
                 isCurrentStatus: true,
             },
         ];
     }
 
-    function handleScriptFinished(executionId, script) {
-        console.log("finished", script);
+    function handleScriptFinished({ pipeline, script, execution_id }) {
         $scriptStatuses = $scriptStatuses.map((s) =>
-            s.script === script && s.executionId === executionId
+            s.pipeline === pipeline &&
+            s.script === script &&
+            s.execution_id === execution_id
                 ? { ...s, status: "finished", isCurrentStatus: false }
                 : s,
         );
     }
 
-    function handleScriptFailed(executionId, script, reason) {
+    function handleScriptFailed({ pipeline, script, execution_id, reason }) {
         $scriptStatuses = $scriptStatuses.map((s) =>
-            s.script === script && s.executionId === executionId
+            s.script === script && s.execution_id === execution_id
                 ? { ...s, status: "failed", reason, isCurrentStatus: false }
                 : s,
         );
@@ -114,5 +112,5 @@
 </script>
 
 <RunButton on:click={runPipeline} />
-<PipelineStatus />
 <StatusDisplay />
+<PipelineStatus />

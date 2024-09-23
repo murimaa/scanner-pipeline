@@ -3,32 +3,37 @@ defmodule DocumentPipeline.Server do
   @pubsub DocumentPipeline.PubSub
   @topic "pipeline_messages"
 
+  @pipelines_path Application.compile_env(:document_pipeline, :pipeline_path)
+  @default_output_path Application.compile_env(:document_pipeline, :output_path)
+
   @tmp_dir Application.compile_env(:document_pipeline, :tmp_path)
   ## Client API
 
-  def start_link({execution_id, scripts_path, input_path, output_path}) do
-    GenServer.start_link(__MODULE__, {execution_id, scripts_path, input_path, output_path},
+  def start_link({execution_id, pipeline_name, input_path, output_path}) do
+    GenServer.start_link(__MODULE__, {execution_id, pipeline_name, input_path, output_path},
       name: via_tuple(execution_id)
     )
   end
 
-  def child_spec({scripts_path, input_path, output_path}) do
+  def child_spec({pipeline_name, input_path, output_path}) do
     execution_id = for _ <- 1..20, into: "", do: <<Enum.random(~c"0123456789abcdef")>>
+    output_path = if output_path == nil, do: @default_output_path, else: output_path
 
     %{
       id: {__MODULE__, execution_id},
-      start: {__MODULE__, :start_link, [{execution_id, scripts_path, input_path, output_path}]},
+      start: {__MODULE__, :start_link, [{execution_id, pipeline_name, input_path, output_path}]},
       restart: :temporary
     }
   end
 
   ## Server Callbacks
 
-  def init({execution_id, scripts_path, input_path, output_path}) do
+  def init({execution_id, pipeline_name, input_path, output_path}) do
     {:ok,
      %{
        execution_id: execution_id,
-       scripts_path: scripts_path,
+       pipeline_name: pipeline_name,
+       scripts_path: Path.join([@pipelines_path, pipeline_name]),
        input_path: input_path,
        output_path: output_path,
        status: :initializing,
@@ -53,7 +58,7 @@ defmodule DocumentPipeline.Server do
   end
 
   def handle_info({:run_next_script, []}, state) do
-    state = send_progress(state, %{event: :pipeline_finished})
+    state = send_progress(state, %{event: :pipeline_finished, pipeline: state.pipeline_name})
     {:stop, :normal, %{state | status: :finished}}
   end
 
@@ -65,21 +70,40 @@ defmodule DocumentPipeline.Server do
       send(my_pid, {:script_finished, script, result, rest})
     end)
 
-    state = send_progress(state, %{event: :script_started, script: script})
+    script_name = script |> Path.basename() |> Path.rootname()
+    pipeline_name = state.pipeline_name
+
+    state =
+      send_progress(state, %{event: :script_started, pipeline: pipeline_name, script: script_name})
 
     {:noreply, %{state | current_script: script}}
   end
 
   def handle_info({:script_finished, script, result, remaining_scripts}, state) do
+    script_name = script |> Path.basename() |> Path.rootname()
+    pipeline_name = state.pipeline_name
+
     case result do
       :ok ->
-        state = send_progress(state, %{event: :script_finished, script: script})
+        state =
+          send_progress(state, %{
+            event: :script_finished,
+            pipeline: pipeline_name,
+            script: script_name
+          })
+
         send(self(), {:run_next_script, remaining_scripts})
         {:noreply, state}
 
       {:error, reason} ->
-        state = send_progress(state, %{event: :script_failed, script: script})
-        state = send_progress(state, %{event: :pipeline_failed})
+        state =
+          send_progress(state, %{
+            event: :script_failed,
+            pipeline: pipeline_name,
+            script: script_name
+          })
+
+        state = send_progress(state, %{event: :pipeline_failed, pipeline: pipeline_name})
         {:stop, :normal, %{state | status: :failed, error: reason}}
     end
   end
@@ -96,6 +120,7 @@ defmodule DocumentPipeline.Server do
 
   defp get_scripts(%{
          execution_id: execution_id,
+         pipeline_name: pipeline_name,
          scripts_path: scripts_path,
          input_path: input_path,
          output_path: output_path
@@ -116,7 +141,7 @@ defmodule DocumentPipeline.Server do
         cwd =
           if index == last_index do
             # Viimeisen skriptin cwd output_dir
-            Path.join([output_path, execution_id])
+            Path.join([output_path, pipeline_name, execution_id])
           else
             # Muut skriptit käyttävät tmp_dir hakemistoa
             Path.join([@tmp_dir, execution_id, script_name])

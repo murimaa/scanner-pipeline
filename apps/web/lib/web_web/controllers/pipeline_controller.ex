@@ -6,14 +6,13 @@ defmodule WebWeb.PipelineController do
 
   @pipeline_path Application.compile_env(:document_pipeline, :pipeline_path)
   @input_path Application.compile_env(:document_pipeline, :input_path)
-  @output_path Application.compile_env(:document_pipeline, :output_path)
 
   def run(conn, _params) do
     IO.inspect(@pipeline_path, label: "scripts_path")
 
     Task.start(fn ->
       {:ok, _pid} =
-        DocumentPipeline.DynamicSupervisor.start_child(@pipeline_path, @input_path, @output_path)
+        DocumentPipeline.DynamicSupervisor.start_child("copy", @input_path)
     end)
 
     conn

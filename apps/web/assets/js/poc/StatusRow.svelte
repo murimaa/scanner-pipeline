@@ -1,7 +1,8 @@
 <script>
     import { onMount, onDestroy } from "svelte";
 
-    export let executionId;
+    export let execution_id;
+    export let pipeline;
     export let text;
     export let status;
     export let isCurrentStatus;
@@ -72,7 +73,8 @@
 </script>
 
 <div class:current-status={isCurrentStatus}>
-    <span style="color: {statusColor}">{statusSymbol} {executionId} {text}</span
+    <span style="color: {statusColor}"
+        >{statusSymbol} {execution_id} {pipeline} {text}</span
     >
 </div>
 
