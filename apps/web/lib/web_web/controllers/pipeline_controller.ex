@@ -37,8 +37,11 @@ defmodule WebWeb.PipelineController do
         json = Jason.encode!(Map.merge(%{execution_id: execution_id}, event))
 
         case chunk(conn, "data: #{json}\n\n") do
-          {:ok, conn} -> stream_messages(conn)
-          {:error, :closed} -> conn
+          {:ok, conn} ->
+            stream_messages(conn)
+
+          {:error, "closed"} ->
+            conn
         end
     after
       600_000 ->
