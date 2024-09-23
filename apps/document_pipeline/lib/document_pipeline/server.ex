@@ -38,8 +38,12 @@ defmodule DocumentPipeline.Server do
      }, {:continue, :run_pipeline}}
   end
 
-  def get_status(execution_id) do
-    GenServer.call(via_tuple(execution_id), :get_status)
+  def get_log(pid) when is_pid(pid) do
+    GenServer.call(pid, :get_log)
+  end
+
+  def get_log(execution_id) do
+    GenServer.call(via_tuple(execution_id), :get_log)
   end
 
   def handle_continue(:run_pipeline, state) do
@@ -50,14 +54,18 @@ defmodule DocumentPipeline.Server do
 
   def handle_info({:run_next_script, []}, state) do
     state = send_progress(state, %{event: :pipeline_finished})
-    {:noreply, %{state | status: :finished}}
+    {:stop, :normal, %{state | status: :finished}}
   end
 
   def handle_info({:run_next_script, [{script, args, cwd} | rest]}, state) do
-    state = send_progress(state, %{event: :script_started, script: script})
+    my_pid = self()
 
-    result = run_script(script, args, cwd)
-    send(self(), {:script_finished, script, result, rest})
+    Task.start(fn ->
+      result = run_script(script, args, cwd)
+      send(my_pid, {:script_finished, script, result, rest})
+    end)
+
+    state = send_progress(state, %{event: :script_started, script: script})
 
     {:noreply, %{state | current_script: script}}
   end
@@ -72,19 +80,12 @@ defmodule DocumentPipeline.Server do
       {:error, reason} ->
         state = send_progress(state, %{event: :script_failed, script: script})
         state = send_progress(state, %{event: :pipeline_failed})
-        {:noreply, %{state | status: :failed, error: reason}}
+        {:stop, :normal, %{state | status: :failed, error: reason}}
     end
   end
 
-  def handle_call(:get_status, _from, state) do
-    status = %{
-      status: state.status,
-      current_script: state.current_script,
-      execution_id: state.execution_id,
-      log: state.log
-    }
-
-    {:reply, status, state}
+  def handle_call(:get_log, _from, %{log: log} = state) do
+    {:reply, log, state}
   end
 
   ## Helper Functions
@@ -154,7 +155,8 @@ defmodule DocumentPipeline.Server do
 
   defp send_progress(state, message) do
     message = {:pipeline_message, state.execution_id, message}
-    Phoenix.PubSub.broadcast(@pubsub, @topic, message)
-    %{state | log: state.log ++ [message]}
+    Phoenix.PubSub.broadcast(@pubsub, "#{@topic}:*", message)
+    Phoenix.PubSub.broadcast(@pubsub, "#{@topic}:#{state.execution_id}", message)
+    %{state | log: state.log ++ [{DateTime.utc_now(), message}]}
   end
 end

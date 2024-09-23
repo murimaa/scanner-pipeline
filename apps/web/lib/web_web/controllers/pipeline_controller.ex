@@ -22,12 +22,20 @@ defmodule WebWeb.PipelineController do
   end
 
   def stream_status(conn, _params) do
+    Phoenix.PubSub.subscribe(@pubsub, "#{@topic}:*")
+
     conn =
       conn
       |> put_resp_content_type("text/event-stream")
       |> send_chunked(200)
 
-    Phoenix.PubSub.subscribe(@pubsub, @topic)
+    # Send cached messages
+    get_cached_messages()
+    |> Enum.each(fn {:pipeline_message, execution_id, event} ->
+      json = Jason.encode!(Map.merge(%{execution_id: execution_id}, event))
+      chunk(conn, "data: #{json}\n\n")
+    end)
+
     stream_messages(conn)
   end
 
@@ -49,5 +57,15 @@ defmodule WebWeb.PipelineController do
         chunk(conn, "data: #{json}\n\n")
         conn
     end
+  end
+
+  defp get_cached_messages do
+    DocumentPipeline.DynamicSupervisor
+    |> DynamicSupervisor.which_children()
+    |> Enum.flat_map(fn {_, pid, _, _} ->
+      DocumentPipeline.Server.get_log(pid)
+    end)
+    |> Enum.sort_by(fn {datetime, _message} -> datetime end)
+    |> Enum.map(fn {_datetime, message} -> message end)
   end
 end

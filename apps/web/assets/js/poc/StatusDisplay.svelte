@@ -4,7 +4,7 @@
 </script>
 
 <div class="status-display">
-    {#each $formattedStatuses as status (status.id)}
+    {#each $formattedStatuses as status (status.key)}
         <StatusRow {...status} />
     {/each}
 </div>

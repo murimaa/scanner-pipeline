@@ -25,11 +25,12 @@
     });
 
     function handleEventSourceOpen() {
-        appendPipelineStatus("Connected to status stream");
+        appendPipelineStatus(null, "Connected to status stream");
     }
 
     function handleEventSourceError(error) {
         appendPipelineStatus(
+            null,
             `Error in status stream: ${error}. Attempting to reconnect...`,
         );
     }
@@ -37,28 +38,30 @@
     function handleStatusUpdate(data) {
         switch (data.event) {
             case "script_started":
-                handleScriptStarted(data.script);
+                handleScriptStarted(data.execution_id, data.script);
                 break;
             case "script_finished":
-                handleScriptFinished(data.script);
+                handleScriptFinished(data.execution_id, data.script);
                 break;
             case "script_failed":
-                handleScriptFailed(data.script, data.reason);
+                handleScriptFailed(data.execution_id, data.script, data.reason);
                 break;
             case "pipeline_failed":
-                handlePipelineFailed(data.reason);
+                handlePipelineFailed(data.execution_id, data.reason);
                 break;
             case "pipeline_finished":
-                handlePipelineFinished();
+                handlePipelineFinished(data.execution_id);
                 break;
         }
     }
 
-    function handleScriptStarted(script) {
+    function handleScriptStarted(executionId, script) {
+        console.log("started", script);
+
         $scriptStatuses = [
             ...$scriptStatuses.map((s) => ({ ...s, isCurrentStatus: false })),
             {
-                id: Date.now(),
+                executionId: executionId,
                 script,
                 status: "running",
                 isCurrentStatus: true,
@@ -66,44 +69,45 @@
         ];
     }
 
-    function handleScriptFinished(script) {
+    function handleScriptFinished(executionId, script) {
+        console.log("finished", script);
         $scriptStatuses = $scriptStatuses.map((s) =>
-            s.script === script
+            s.script === script && s.executionId === executionId
                 ? { ...s, status: "finished", isCurrentStatus: false }
                 : s,
         );
     }
 
-    function handleScriptFailed(script, reason) {
+    function handleScriptFailed(executionId, script, reason) {
         $scriptStatuses = $scriptStatuses.map((s) =>
-            s.script === script
+            s.script === script && s.executionId === executionId
                 ? { ...s, status: "failed", reason, isCurrentStatus: false }
                 : s,
         );
     }
 
-    function handlePipelineFailed(reason) {
-        appendPipelineStatus(`Pipeline failed: ${reason}`);
+    function handlePipelineFailed(executionId, reason) {
+        appendPipelineStatus(null, `Pipeline failed: ${reason}`);
         $isRunning = false;
     }
 
-    function handlePipelineFinished() {
-        appendPipelineStatus("Pipeline completed successfully.");
+    function handlePipelineFinished(executionId) {
+        appendPipelineStatus(null, "Pipeline completed successfully.");
         $isRunning = false;
     }
 
-    function appendPipelineStatus(message) {
+    function appendPipelineStatus(executionId, message) {
         $pipelineStatus = [...$pipelineStatus, { message }];
     }
 
     async function runPipeline() {
         $isRunning = true;
-        appendPipelineStatus("Starting pipeline...");
+        appendPipelineStatus(null, "Starting pipeline...");
 
         try {
             await fetch(API_ENDPOINTS.RUN_PIPELINE, { method: "POST" });
         } catch (error) {
-            appendPipelineStatus(`Error starting pipeline: ${error}`);
+            appendPipelineStatus(null, `Error starting pipeline: ${error}`);
             $isRunning = false;
         }
     }
