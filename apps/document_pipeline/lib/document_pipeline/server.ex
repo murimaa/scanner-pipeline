@@ -30,17 +30,61 @@ defmodule DocumentPipeline.Server do
        execution_id: execution_id,
        scripts_path: scripts_path,
        input_path: input_path,
-       output_path: output_path
+       output_path: output_path,
+       status: :initializing,
+       current_script: nil,
+       error: nil,
+       log: []
      }, {:continue, :run_pipeline}}
   end
 
-  def handle_continue(
-        :run_pipeline,
-        %{execution_id: execution_id} = state
-      ) do
+  def get_status(execution_id) do
+    GenServer.call(via_tuple(execution_id), :get_status)
+  end
+
+  def handle_continue(:run_pipeline, state) do
     scripts_with_args = get_scripts(state)
-    run_scripts(execution_id, scripts_with_args)
-    {:noreply, state}
+    send(self(), {:run_next_script, scripts_with_args})
+    {:noreply, %{state | status: :running, current_script: nil}}
+  end
+
+  def handle_info({:run_next_script, []}, state) do
+    state = send_progress(state, %{event: :pipeline_finished})
+    {:noreply, %{state | status: :finished}}
+  end
+
+  def handle_info({:run_next_script, [{script, args, cwd} | rest]}, state) do
+    state = send_progress(state, %{event: :script_started, script: script})
+
+    result = run_script(script, args, cwd)
+    send(self(), {:script_finished, script, result, rest})
+
+    {:noreply, %{state | current_script: script}}
+  end
+
+  def handle_info({:script_finished, script, result, remaining_scripts}, state) do
+    case result do
+      :ok ->
+        state = send_progress(state, %{event: :script_finished, script: script})
+        send(self(), {:run_next_script, remaining_scripts})
+        {:noreply, state}
+
+      {:error, reason} ->
+        state = send_progress(state, %{event: :script_failed, script: script})
+        state = send_progress(state, %{event: :pipeline_failed})
+        {:noreply, %{state | status: :failed, error: reason}}
+    end
+  end
+
+  def handle_call(:get_status, _from, state) do
+    status = %{
+      status: state.status,
+      current_script: state.current_script,
+      execution_id: state.execution_id,
+      log: state.log
+    }
+
+    {:reply, status, state}
   end
 
   ## Helper Functions
@@ -86,27 +130,6 @@ defmodule DocumentPipeline.Server do
     Enum.reverse(script_tuples)
   end
 
-  defp run_scripts(execution_id, scripts_with_args) do
-    send_progress(execution_id, %{event: :pipeline_started})
-
-    Enum.each(scripts_with_args, fn {script, args, cwd} ->
-      send_progress(execution_id, %{event: :script_started, script: script})
-
-      case run_script(script, args, cwd) do
-        :ok ->
-          send_progress(execution_id, %{event: :script_finished, script: script})
-
-        {:error, reason} ->
-          send_progress(execution_id, %{event: :script_failed, script: script})
-          send_progress(execution_id, %{event: :pipeline_failed})
-          # Lopetetaan suorituksen jatkaminen
-          exit(reason)
-      end
-    end)
-
-    send_progress(execution_id, %{event: :pipeline_finished})
-  end
-
   defp run_script(script_path, args, cwd) do
     # IO.puts("Suoritetaan: #{script_path} #{args}")
 
@@ -129,7 +152,9 @@ defmodule DocumentPipeline.Server do
     end
   end
 
-  defp send_progress(execution_id, message) do
-    Phoenix.PubSub.broadcast(@pubsub, @topic, {:pipeline_message, execution_id, message})
+  defp send_progress(state, message) do
+    message = {:pipeline_message, state.execution_id, message}
+    Phoenix.PubSub.broadcast(@pubsub, @topic, message)
+    %{state | log: state.log ++ [message]}
   end
 end
