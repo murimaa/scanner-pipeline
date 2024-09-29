@@ -4,7 +4,7 @@ defmodule WebWeb.PipelineController do
   @pipeline_path Application.compile_env(:document_pipeline, :pipeline_path)
   @input_path Application.compile_env(:document_pipeline, :input_path)
 
-  def run(conn, _params) do
+  def scan(conn, _params) do
     Task.start(fn ->
       {:ok, _pid} =
         DocumentPipeline.DynamicSupervisor.start_child("scan", @input_path)

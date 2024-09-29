@@ -27,7 +27,8 @@ defmodule WebWeb.Router do
 
   scope "/api", WebWeb do
     pipe_through(:api)
-    post("/pipeline/run", PipelineController, :run)
+    post("/pipeline/scan", PipelineController, :scan)
+    post("/pipeline/generate-pdf", PipelineController, :generate_pdf)
   end
 
   scope "/api", WebWeb do

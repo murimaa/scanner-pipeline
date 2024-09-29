@@ -1,9 +1,10 @@
 <script>
     //export let isRunning;
     import { isRunning } from "./store.js";
+    export let text = "foo";
 </script>
 
-<button on:click disabled={$isRunning}> Run Pipeline </button>
+<button on:click disabled={$isRunning}>{text}</button>
 
 <style>
     button {
