@@ -12,7 +12,7 @@ defmodule WebWeb.PipelineController do
 
     Task.start(fn ->
       {:ok, _pid} =
-        DocumentPipeline.DynamicSupervisor.start_child("copy", @input_path)
+        DocumentPipeline.DynamicSupervisor.start_child("scan", @input_path)
     end)
 
     conn

@@ -5,6 +5,11 @@ defmodule Web.Application do
 
   use Application
 
+  @scan_originals_path Path.join([
+                         Application.compile_env(:document_pipeline, :output_path),
+                         "scan"
+                       ])
+
   @impl true
   def start(_type, _args) do
     children = [
@@ -12,7 +17,8 @@ defmodule Web.Application do
       {DNSCluster, query: Application.get_env(:web, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Web.PubSub},
       # Start the Finch HTTP client for sending emails
-      {Finch, name: Web.Finch},
+      # {Finch, name: Web.Finch},
+      {DocumentPipeline.FileWatcher, {@scan_originals_path, "thumbnail"}},
       # Start a worker by calling: Web.Worker.start_link(arg)
       # {Web.Worker, arg},
       # Start to serve requests, typically the last entry

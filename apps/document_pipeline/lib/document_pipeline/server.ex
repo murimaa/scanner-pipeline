@@ -36,6 +36,9 @@ defmodule DocumentPipeline.Server do
        scripts_path: Path.join([@pipelines_path, pipeline_name]),
        input_path: input_path,
        output_path: output_path,
+       # Whether to create execution_id subdirs to output_path
+       # Not configurable for now
+       flat_output_dir: true,
        status: :initializing,
        current_script: nil,
        error: nil,
@@ -123,7 +126,8 @@ defmodule DocumentPipeline.Server do
          pipeline_name: pipeline_name,
          scripts_path: scripts_path,
          input_path: input_path,
-         output_path: output_path
+         output_path: output_path,
+         flat_output_dir: flat_output_dir
        }) do
     scripts =
       Path.wildcard(Path.join(scripts_path, "*.sh"))
@@ -141,7 +145,11 @@ defmodule DocumentPipeline.Server do
         cwd =
           if index == last_index do
             # Viimeisen skriptin cwd output_dir
-            Path.join([output_path, pipeline_name, execution_id])
+            if flat_output_dir do
+              Path.join([output_path, pipeline_name])
+            else
+              Path.join([output_path, pipeline_name, execution_id])
+            end
           else
             # Muut skriptit käyttävät tmp_dir hakemistoa
             Path.join([@tmp_dir, execution_id, script_name])

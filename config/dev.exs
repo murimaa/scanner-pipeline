@@ -2,7 +2,7 @@ import Config
 
 config :document_pipeline,
   pipeline_path: Path.expand("pipelines", File.cwd!()),
-  input_path: Path.expand("pipeline_input", File.cwd!()),
+  input_path: Path.expand("sample_scans", File.cwd!()),
   output_path: Path.expand("test_output", File.cwd!()),
   tmp_path: Path.expand("tmp", File.cwd!())
 
