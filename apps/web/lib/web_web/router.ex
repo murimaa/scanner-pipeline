@@ -32,6 +32,7 @@ defmodule WebWeb.Router do
   scope "/api", WebWeb do
     pipe_through(:event_stream)
     get("/console/status_stream", ConsoleController, :status_stream)
+    get("/thumbnails/stream", ThumbnailController, :thumbnail_stream)
   end
 
   # Other scopes may use custom stacks.
