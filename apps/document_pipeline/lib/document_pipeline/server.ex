@@ -46,6 +46,10 @@ defmodule DocumentPipeline.Server do
      }, {:continue, :run_pipeline}}
   end
 
+  def get_execution_id(pid) when is_pid(pid) do
+    GenServer.call(pid, :get_execution_id)
+  end
+
   def get_log(pid) when is_pid(pid) do
     GenServer.call(pid, :get_log)
   end
@@ -113,6 +117,10 @@ defmodule DocumentPipeline.Server do
 
   def handle_call(:get_log, _from, %{log: log} = state) do
     {:reply, log, state}
+  end
+
+  def handle_call(:get_execution_id, _from, %{execution_id: execution_id} = state) do
+    {:reply, execution_id, state}
   end
 
   ## Helper Functions

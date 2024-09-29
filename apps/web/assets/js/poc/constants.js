@@ -3,7 +3,7 @@ export const API_ENDPOINTS = {
   THUMBNAIL_STREAM: "/api/thumbnails/stream",
   STATUS_STREAM: "/api/console/status_stream",
   SCAN_PIPELINE: "/api/pipeline/scan",
-  GENERATE_PDF: "/api/pages/generate-pdf",
+  GENERATE_PDF: "/api/pipeline/generate-pdf",
   DELETE_PAGE: "/api/pages",
 };
 export const STATUS_COLORS = {
