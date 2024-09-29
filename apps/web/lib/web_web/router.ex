@@ -22,6 +22,7 @@ defmodule WebWeb.Router do
     pipe_through(:browser)
 
     get("/", PageController, :home)
+    get("/thumbnails/:filename", ThumbnailController, :serve_thumbnail)
   end
 
   scope "/api", WebWeb do
@@ -33,6 +34,7 @@ defmodule WebWeb.Router do
     pipe_through(:event_stream)
     get("/console/status_stream", ConsoleController, :status_stream)
     get("/thumbnails/stream", ThumbnailController, :thumbnail_stream)
+    delete("/pages/:filename", ThumbnailController, :delete_page)
   end
 
   # Other scopes may use custom stacks.

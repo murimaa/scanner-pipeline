@@ -59,7 +59,8 @@ defmodule Web.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
-      {:document_pipeline, in_umbrella: true}
+      {:document_pipeline, in_umbrella: true},
+      {:mime, "~> 2.0"}
     ]
   end
 

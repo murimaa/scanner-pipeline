@@ -21,3 +21,5 @@ export const formattedStatuses = derived(scriptStatuses, ($scriptStatuses) => {
     }, {}),
   );
 });
+
+export const thumbnails = writable([]);

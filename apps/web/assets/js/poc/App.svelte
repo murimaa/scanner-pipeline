@@ -1,11 +1,14 @@
 <script>
     import PipelineConsole from "./PipelineConsole.svelte";
     import PipelineRunner from "./PipelineRunner.svelte";
+    import ThumbnailDisplay from "./ThumbnailDisplay.svelte";
 </script>
 
 <main>
-    <h1>Pipeline Runner</h1>
     <PipelineRunner />
+    <h1>Generated Thumbnails</h1>
+    <ThumbnailDisplay />
+    <h2>Pipeline Runner</h2>
     <PipelineConsole />
 </main>
 
@@ -16,7 +19,8 @@
         padding: 20px;
     }
 
-    h1 {
+    h1,
+    h2 {
         text-align: center;
         color: #333;
         margin-bottom: 20px;
