@@ -1,6 +1,6 @@
 export const RECONNECT_DELAY = 5000;
 export const API_ENDPOINTS = {
-  STREAM_STATUS: "/api/pipeline/stream_status",
+  STATUS_STREAM: "/api/console/status_stream",
   RUN_PIPELINE: "/api/pipeline/run",
 };
 export const STATUS_COLORS = {

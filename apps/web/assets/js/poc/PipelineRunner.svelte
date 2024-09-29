@@ -11,7 +11,7 @@
 
     onMount(() => {
         eventSourceManager = createEventSourceManager(
-            API_ENDPOINTS.STREAM_STATUS,
+            API_ENDPOINTS.STATUS_STREAM,
             handleStatusUpdate,
             handleEventSourceOpen,
             handleEventSourceError,
