@@ -1,4 +1,5 @@
 <script>
+    //export let isRunning;
     import { isRunning } from "./store.js";
 </script>
 
