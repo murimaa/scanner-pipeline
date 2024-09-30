@@ -3,10 +3,6 @@ defmodule DocumentPipeline.Server do
   @pubsub DocumentPipeline.PubSub
   @topic "pipeline_messages"
 
-  @pipelines_path Application.compile_env(:document_pipeline, :pipeline_path)
-  @default_output_path Application.compile_env(:document_pipeline, :output_path)
-
-  @tmp_dir Application.compile_env(:document_pipeline, :tmp_path)
   ## Client API
 
   def start_link({execution_id, pipeline_name, input_path, output_path}) do
@@ -17,7 +13,11 @@ defmodule DocumentPipeline.Server do
 
   def child_spec({pipeline_name, input_path, output_path}) do
     execution_id = for _ <- 1..20, into: "", do: <<Enum.random(~c"0123456789abcdef")>>
-    output_path = if output_path == nil, do: @default_output_path, else: output_path
+
+    output_path =
+      if output_path == nil,
+        do: Application.get_env(:document_pipeline, :output_path),
+        else: output_path
 
     %{
       id: {__MODULE__, execution_id},
@@ -33,7 +33,8 @@ defmodule DocumentPipeline.Server do
      %{
        execution_id: execution_id,
        pipeline_name: pipeline_name,
-       scripts_path: Path.join([@pipelines_path, pipeline_name]),
+       scripts_path:
+         Path.join([Application.get_env(:document_pipeline, :pipeline_path), pipeline_name]),
        input_path: input_path,
        output_path: output_path,
        # Whether to create execution_id subdirs to output_path
@@ -165,8 +166,11 @@ defmodule DocumentPipeline.Server do
               Path.join([output_path, pipeline_name, execution_id])
             end
           else
-            # Muut skriptit käyttävät tmp_dir hakemistoa
-            Path.join([@tmp_dir, execution_id, script_name])
+            Path.join([
+              Application.get_env(:document_pipeline, :tmp_path),
+              execution_id,
+              script_name
+            ])
           end
 
         # Luodaan tuple {script, args, cwd}
@@ -179,7 +183,7 @@ defmodule DocumentPipeline.Server do
   end
 
   defp cleanup_temp_files(execution_id) do
-    temp_dir = Path.join([@tmp_dir, execution_id])
+    temp_dir = Path.join([Application.get_env(:document_pipeline, :tmp_path), execution_id])
     File.rm_rf!(temp_dir)
   end
 

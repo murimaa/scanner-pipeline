@@ -4,25 +4,13 @@ defmodule WebWeb.PipelineController do
   @pubsub DocumentPipeline.PubSub
   @topic "pipeline_messages"
 
-  @pipeline_path Application.compile_env(:document_pipeline, :pipeline_path)
-  @input_path Application.compile_env(:document_pipeline, :input_path)
-  @page_dir Path.join([
-              Application.compile_env(:document_pipeline, :output_path),
-              "scan"
-            ])
-
-  @thumbnail_dir Path.join([
-                   Application.compile_env(:document_pipeline, :output_path),
-                   "thumbnail"
-                 ])
-  @page_dir Path.join([
-              Application.compile_env(:document_pipeline, :output_path),
-              "scan"
-            ])
   def scan(conn, _params) do
     Task.start(fn ->
       {:ok, _pid} =
-        DocumentPipeline.DynamicSupervisor.start_child("scan", @input_path)
+        DocumentPipeline.DynamicSupervisor.start_child(
+          "scan",
+          Application.get_env(:document_pipeline, :input_path)
+        )
     end)
 
     conn
@@ -31,15 +19,21 @@ defmodule WebWeb.PipelineController do
   end
 
   def generate_pdf(conn, params) do
-    files = params["files"]
+    originals_dir =
+      Path.join([
+        Application.get_env(:document_pipeline, :output_path),
+        "scan"
+      ])
 
     unique_string = :crypto.strong_rand_bytes(16) |> Base.url_encode64() |> binary_part(0, 16)
     temp_dir = Path.join([System.tmp_dir!(), unique_string])
 
+    files = params["files"]
+
     File.mkdir_p!(temp_dir)
 
     Enum.each(files, fn file ->
-      source_path = Path.join(@page_dir, "#{file}.png")
+      source_path = Path.join(originals_dir, "#{file}.png")
       dest_path = Path.join(temp_dir, "#{file}.png")
       File.cp!(source_path, dest_path)
     end)
@@ -105,13 +99,25 @@ defmodule WebWeb.PipelineController do
   end
 
   defp delete_page_and_thumbnail(filename) do
+    originals_dir =
+      Path.join([
+        Application.get_env(:document_pipeline, :output_path),
+        "scan"
+      ])
+
+    thumbnails_dir =
+      Path.join([
+        Application.get_env(:document_pipeline, :output_path),
+        "thumbnail"
+      ])
+
     thumbnail_filename = "#{filename}.webp"
     original_filename = "#{filename}.png"
-    thumbnail_full_path = Path.join([@thumbnail_dir, thumbnail_filename])
-    original_full_path = Path.join([@page_dir, original_filename])
+    thumbnail_full_path = Path.join([thumbnails_dir, thumbnail_filename])
+    original_full_path = Path.join([originals_dir, original_filename])
 
-    with {:ok, _} <- Path.safe_relative(filename, @thumbnail_dir),
-         {:ok, _} <- Path.safe_relative(filename, @page_dir),
+    with {:ok, _} <- Path.safe_relative(filename, thumbnails_dir),
+         {:ok, _} <- Path.safe_relative(filename, originals_dir),
          true <- File.exists?(thumbnail_full_path) and File.exists?(original_full_path),
          # true <- image?(filename),
          :ok <- File.rm(thumbnail_full_path),

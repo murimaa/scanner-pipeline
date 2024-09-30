@@ -28,3 +28,11 @@ document_pipeline-*.tar
 # Temporary files, for example, from tests.
 **/tmp/
 **/test_*/
+
+# Sample scans etc
+sample_scans/
+sample_pipelines/
+pipeline_input/
+
+docker-compose-example/input
+docker-compose-example/output

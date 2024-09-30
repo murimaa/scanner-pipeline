@@ -30,6 +30,8 @@ defmodule DocumentPipeline.FileWatcher do
     Logger.info("New file detected: #{path}")
 
     Task.start(fn ->
+      wait_for_file_size_stabilization(path)
+
       {:ok, _pid} =
         DocumentPipeline.DynamicSupervisor.start_child(pipeline_name, path)
     end)
@@ -46,5 +48,22 @@ defmodule DocumentPipeline.FileWatcher do
 
   def handle_info({:file_events, _watcher_pid, _events}, state) do
     {:noreply, state}
+  end
+
+  defp wait_for_file_size_stabilization(path, attempts \\ 10, delay \\ 500)
+
+  defp wait_for_file_size_stabilization(path, 0, _),
+    do: Logger.warning("File size did not stabilize: #{path}")
+
+  defp wait_for_file_size_stabilization(path, attempts, delay) do
+    size = File.stat!(path).size
+    Process.sleep(delay)
+    new_size = File.stat!(path).size
+
+    if size == new_size do
+      :ok
+    else
+      wait_for_file_size_stabilization(path, attempts - 1, delay)
+    end
   end
 end

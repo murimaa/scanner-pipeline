@@ -38,7 +38,7 @@ config :web, Web.Mailer, adapter: Swoosh.Adapters.Local
 # Configure tailwind (the version is required)
 config :tailwind,
   version: "3.4.3",
-  web: [
+  app: [
     args: ~w(
       --config=tailwind.config.js
       --input=css/app.css

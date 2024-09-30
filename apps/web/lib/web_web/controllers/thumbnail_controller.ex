@@ -1,14 +1,6 @@
 defmodule WebWeb.ThumbnailController do
   use WebWeb, :controller
 
-  @thumbnail_dir Path.join([
-                   Application.compile_env(:document_pipeline, :output_path),
-                   "thumbnail"
-                 ])
-  @page_dir Path.join([
-              Application.compile_env(:document_pipeline, :output_path),
-              "scan"
-            ])
   # Check for changes every 1 seconds
   @check_interval 1000
 
@@ -23,7 +15,8 @@ defmodule WebWeb.ThumbnailController do
   end
 
   def serve_thumbnail(conn, %{"filename" => filename}) do
-    file_path = Path.join(@thumbnail_dir, filename)
+    file_path =
+      Path.join([Application.get_env(:document_pipeline, :output_path), "thumbnail", filename])
 
     if File.exists?(file_path) and image?(filename) do
       content_type = MIME.from_path(filename)
@@ -60,10 +53,16 @@ defmodule WebWeb.ThumbnailController do
   end
 
   defp list_thumbnails do
-    @thumbnail_dir
-    |> File.ls!()
-    |> Enum.filter(&image?/1)
-    |> Enum.map(&%{name: &1, url: thumbnail_url(&1)})
+    with {:ok, files} <-
+           Application.get_env(:document_pipeline, :output_path)
+           |> Path.join("thumbnail")
+           |> File.ls() do
+      files
+      |> Enum.filter(&image?/1)
+      |> Enum.map(&%{name: &1, url: thumbnail_url(&1)})
+    else
+      {:error, _} -> []
+    end
   end
 
   defp image?(filename) do
