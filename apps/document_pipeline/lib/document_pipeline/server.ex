@@ -66,6 +66,7 @@ defmodule DocumentPipeline.Server do
 
   def handle_info({:run_next_script, []}, state) do
     state = send_progress(state, %{event: :pipeline_finished, pipeline: state.pipeline_name})
+    cleanup_temp_files(state.execution_id)
     {:stop, :normal, %{state | status: :finished}}
   end
 
@@ -111,6 +112,7 @@ defmodule DocumentPipeline.Server do
           })
 
         state = send_progress(state, %{event: :pipeline_failed, pipeline: pipeline_name})
+        cleanup_temp_files(state.execution_id)
         {:stop, :normal, %{state | status: :failed, error: reason}}
     end
   end
@@ -121,6 +123,10 @@ defmodule DocumentPipeline.Server do
 
   def handle_call(:get_execution_id, _from, %{execution_id: execution_id} = state) do
     {:reply, execution_id, state}
+  end
+
+  def terminate(_reason, state) do
+    cleanup_temp_files(state.execution_id)
   end
 
   ## Helper Functions
@@ -170,6 +176,11 @@ defmodule DocumentPipeline.Server do
       end)
 
     Enum.reverse(script_tuples)
+  end
+
+  defp cleanup_temp_files(execution_id) do
+    temp_dir = Path.join([@tmp_dir, execution_id])
+    File.rm_rf!(temp_dir)
   end
 
   defp run_script(script_path, args, cwd) do
