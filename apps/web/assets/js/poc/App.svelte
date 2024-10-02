@@ -6,7 +6,6 @@
 
 <main>
     <PipelineRunner />
-    <h1>Generated Thumbnails</h1>
     <ThumbnailDisplay />
     <h2>Pipeline Runner</h2>
     <PipelineConsole />
@@ -14,7 +13,8 @@
 
 <style>
     main {
-        max-width: 800px;
+        width: 90vw;
+        max-width: 1000px;
         margin: 0 auto;
         padding: 20px;
     }

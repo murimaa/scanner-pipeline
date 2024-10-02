@@ -11,7 +11,6 @@ export const formattedStatuses = derived(scriptStatuses, ($scriptStatuses) => {
   return Object.values(
     $scriptStatuses.reduce((acc, status) => {
       const key = `${status.execution_id}-${status.pipeline}-${status.script}`;
-      console.log(key);
       acc[key] = {
         ...status,
         key: key,
@@ -23,3 +22,4 @@ export const formattedStatuses = derived(scriptStatuses, ($scriptStatuses) => {
 });
 
 export const thumbnails = writable([]);
+export const documents = writable([]);

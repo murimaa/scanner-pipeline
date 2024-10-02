@@ -1,6 +1,11 @@
 <script>
     import { onMount, onDestroy } from "svelte";
-    import { isRunning, pipelineStatus, thumbnails } from "./store.js";
+    import {
+        isRunning,
+        pipelineStatus,
+        thumbnails,
+        documents,
+    } from "./store.js";
     import PipelineButton from "./PipelineButton.svelte";
     import { API_ENDPOINTS } from "./constants.js";
 
@@ -21,32 +26,32 @@
     }
 
     async function generatePDF() {
-        $isRunning = true;
         appendPipelineStatus(null, "Generating PDF...");
+        $documents.forEach(async (document) => {
+            const fileList = document.map((page) =>
+                page.name.substring(0, page.name.lastIndexOf(".")),
+            );
 
-        const fileList = $thumbnails.map((thumbnail) =>
-            thumbnail.name.substring(0, thumbnail.name.lastIndexOf(".")),
-        );
+            try {
+                const response = await fetch(API_ENDPOINTS.GENERATE_PDF, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ files: fileList }),
+                });
 
-        try {
-            const response = await fetch(API_ENDPOINTS.GENERATE_PDF, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ files: fileList }),
-            });
-
-            if (response.ok) {
-                appendPipelineStatus(null, "PDF generated successfully");
-            } else {
-                throw new Error("Failed to generate PDF");
+                if (response.ok) {
+                    appendPipelineStatus(null, "PDF generated successfully");
+                } else {
+                    throw new Error("Failed to generate PDF");
+                }
+            } catch (error) {
+                appendPipelineStatus(null, `Error generating PDF: ${error}`);
+            } finally {
             }
-        } catch (error) {
-            appendPipelineStatus(null, `Error generating PDF: ${error}`);
-        } finally {
-            $isRunning = false;
-        }
+        });
+        $documents = [];
     }
 </script>
 
