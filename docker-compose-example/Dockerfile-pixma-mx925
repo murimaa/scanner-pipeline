@@ -1,5 +1,5 @@
 # Use the image built by your original Dockerfile as the base
-FROM document_pipeline:latest
+FROM app-base
 
 ARG PRINTER_IP
 # Install additional packages

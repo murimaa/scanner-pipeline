@@ -1,10 +1,17 @@
 services:
+  app-base:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: app-base
   app:
     build:
       context: .
       dockerfile: Dockerfile-pixma-mx925
       args:
         - PRINTER_IP=
+    depends_on:
+      - app-base
     ports:
       - "4000:4000"
     environment:
