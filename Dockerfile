@@ -26,7 +26,8 @@ RUN mix phx.digest && \
 
 
 # runtime image
-FROM alpine:3.20 AS app
+FROM alpine:3.20.3 AS app
+
 RUN apk upgrade --no-cache && \
     apk add --no-cache openssl ncurses-libs libgcc libstdc++ && \
     apk add --no-cache inotify-tools bash

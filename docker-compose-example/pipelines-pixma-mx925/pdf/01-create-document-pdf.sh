@@ -62,7 +62,7 @@ if [ ${#IMAGE_PAGES[@]} -eq 0 ]; then
 fi
 
 echo "Making pdf $OUTPUT_FILE"
-magick "${IMAGE_PAGES[@]}" -density 72 -page a4 "$OUTPUT_FILE"
+magick "${IMAGE_PAGES[@]}" -density 72 -page a4 pdf:"$OUTPUT_FILE"
 retval=$?
 if [ $retval -ne 0 ]; then
     echo "Non-zero return value: $retval - exiting."

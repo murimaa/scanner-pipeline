@@ -1,0 +1,21 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile-pixma-mx925
+      args:
+        - PRINTER_IP=
+    ports:
+      - "4000:4000"
+    environment:
+      - SECRET_KEY_BASE=eBFsj2MQi3pT2mJ7+Qgxji1MmVaH5vUTm33i+/868Kl6sj4Y0oJzAeUxwq0fxZCr
+      - PORT=4000
+      - HOST=localhost
+      - PIPELINE_PATH=/app/pipelines
+      - INPUT_PATH=/app/input
+      - OUTPUT_PATH=/app/output
+      - TMP_PATH=/app/tmp
+    volumes:
+      - ./pipelines-pixma-mx925:/app/pipelines
+      - ./input:/app/input
+      - ./output:/app/output

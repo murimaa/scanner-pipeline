@@ -16,14 +16,8 @@ do
   # Check if it's a file
   if [[ -f "$INPUT" ]]; then
     BASENAME="${INPUT##*/}"
-    echo "  -> $INPUT"
-    # "${CURRENT_DIR}/lib/textcleaner2" -g -e stretch -f 25 -o 10 -u -s 1 -T -p 10 "$INPUT" "$OUTPUT_DIR/$BASENAME"
-    #magick "$INPUT" -deskew 40% -colorspace Gray -despeckle -contrast-stretch 0 -trim +repage -threshold 50% "$OUTPUT_DIR/$BASENAME"
-
-    orientation=$(magick "$INPUT" -resize 100x100\! -format "%[fx:(w>h)?90:0]" info:)
-    magick "$INPUT" -rotate "$orientation" -deskew 40% -gravity center -crop 2480x3508+0+0 -colorspace Gray -despeckle -contrast-stretch 0 -trim +repage -threshold 50% "$OUTPUT_DIR/$BASENAME"
-
-
+    echo "  -> $INPUT -> $OUTPUT_DIR/$BASENAME"
+    magick "$INPUT" -trim +repage "$OUTPUT_DIR/$BASENAME"
     retval=$?
     if [ $retval -ne 0 ]; then
       echo "Non-zero return value: $retval - exiting."

@@ -22,7 +22,7 @@ for INPUT in "$INPUT_DIR"/*; do
     ORIGINAL_NAME="${BASENAME%.*}"
 
     # file name is in the format of:
-    # 0024-0003.tiff
+    # yyyymmdd-hhmmss-0024-0003.pnm
     # first number being a running number and second number page number of a scan
 
     # Extract the second number using the cut command
@@ -32,7 +32,7 @@ for INPUT in "$INPUT_DIR"/*; do
     # Remove leading zeros (converts to 10 base number)
     PAGE_NUMBER=$((10#$second_number))
 
-    OUTPUT_FILENAME="$OUTPUT_DIR/${ORIGINAL_NAME}.TIFF"
+    OUTPUT_FILENAME="$OUTPUT_DIR/${ORIGINAL_NAME}.pnm"
 
     # Get file size in bytes using ls -l
     FILE_SIZE=$(ls -l "$INPUT" | awk '{print $5}')
