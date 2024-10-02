@@ -84,7 +84,7 @@
     }
 
     function unselectDocument(document) {
-        newDocuments = documents.filter((d) => d !== document);
+        const newDocuments = $documents.filter((d) => d !== document);
         selectedPages = $thumbnails.filter((t) =>
             newDocuments
                 .flat()
