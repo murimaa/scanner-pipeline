@@ -1,6 +1,6 @@
 #!/bin/bash
 # Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Save the first argument as the input directory
 INPUT_DIR=$1
@@ -17,7 +17,7 @@ do
   if [[ -f "$INPUT" ]]; then
     BASENAME="${INPUT##*/}"
     echo "  -> $INPUT -> $OUTPUT_DIR/$BASENAME"
-    magick "$INPUT" -trim +repage "$OUTPUT_DIR/$BASENAME"
+    convert "$INPUT" -trim +repage "$OUTPUT_DIR/$BASENAME"
     retval=$?
     if [ $retval -ne 0 ]; then
       echo "Non-zero return value: $retval - exiting."

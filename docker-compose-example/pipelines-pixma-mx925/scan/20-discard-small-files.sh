@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
-
 # Save the first argument as the input directory
 INPUT_DIR=$1
 

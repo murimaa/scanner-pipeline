@@ -1,7 +1,7 @@
-FROM elixir:1.17.2-alpine AS build
+FROM elixir:1.17.2-slim AS build
 
 # install build dependencies
-RUN apk add --no-cache --update build-base git nodejs npm
+RUN apt update && apt install -y git nodejs npm
 
 # prepare build dir
 WORKDIR /app
@@ -26,11 +26,12 @@ RUN mix phx.digest && \
 
 
 # runtime image
-FROM alpine:3.20.3 AS app
+FROM debian:bookworm-slim AS app
 
-RUN apk upgrade --no-cache && \
-    apk add --no-cache openssl ncurses-libs libgcc libstdc++ && \
-    apk add --no-cache inotify-tools bash
+RUN apt update && apt upgrade && \
+    apt install -y openssl inotify-tools
+#    apk add --no-cache openssl ncurses-libs libgcc libstdc++ && \
+#    apk add --no-cache inotify-tools bash
 
 WORKDIR /app
 

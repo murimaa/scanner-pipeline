@@ -1,6 +1,6 @@
 #!/bin/bash
 # Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Save the first argument as the input directory
 INPUT_DIR=$1
@@ -20,8 +20,8 @@ do
     # "${CURRENT_DIR}/lib/textcleaner2" -g -e stretch -f 25 -o 10 -u -s 1 -T -p 10 "$INPUT" "$OUTPUT_DIR/$BASENAME"
     #magick "$INPUT" -deskew 40% -colorspace Gray -despeckle -contrast-stretch 0 -trim +repage -threshold 50% "$OUTPUT_DIR/$BASENAME"
 
-    orientation=$(magick "$INPUT" -resize 100x100\! -format "%[fx:(w>h)?90:0]" info:)
-    magick "$INPUT" -rotate "$orientation" -deskew 40% -gravity center -crop 2480x3508+0+0 -colorspace Gray -despeckle -contrast-stretch 2%x90% -trim +repage -threshold 60% "$OUTPUT_DIR/$BASENAME"
+    orientation=$(convert "$INPUT" -resize 100x100\! -format "%[fx:(w>h)?90:0]" info:)
+    convert "$INPUT" -rotate "$orientation" -deskew 40% -gravity center -crop 2480x3508+0+0 -colorspace Gray -despeckle -contrast-stretch 2%x90% -trim +repage -threshold 60% "$OUTPUT_DIR/$BASENAME"
 
 
     retval=$?

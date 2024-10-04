@@ -1,16 +1,15 @@
 # Use the image built by your original Dockerfile as the base
 FROM app-base
 
-ARG PRINTER_IP
 # Install additional packages
-RUN apk add --no-cache libwebp-tools imagemagick ghostscript
+RUN apt install -y imagemagick ghostscript
+RUN apt install -y sane sane-utils
 
-# Newer versions of sane don't work with ADF Duplex scanning correctly.
-# Install sane version 1.0 from alpine 3.10 repository.
-RUN echo https://dl-cdn.alpinelinux.org/alpine/v3.10/main >> /etc/apk/repositories
-RUN echo https://dl-cdn.alpinelinux.org/alpine/v3.10/community >> /etc/apk/repositories
-RUN apk update && apk add "sane=~1.0" "sane-utils=~1.0" "sane-backend-pixma=~1.0"
+ARG PRINTER_IP
 RUN echo "bjnp://$PRINTER_IP" >> /etc/sane.d/pixma.conf
+
+# Use sed to replace imagemagick PDF policy
+RUN sed -i 's/<policy domain="coder" rights="none" pattern="PDF" \/>/<policy domain="coder" rights="read | write" pattern="PDF" \/>/' /etc/ImageMagick-6/policy.xml
 
 # You can add any other customizations here
 
