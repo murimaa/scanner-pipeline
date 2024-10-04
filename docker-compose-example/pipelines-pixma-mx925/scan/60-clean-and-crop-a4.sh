@@ -17,11 +17,8 @@ do
   if [[ -f "$INPUT" ]]; then
     BASENAME="${INPUT##*/}"
     echo "  -> $INPUT"
-    # "${CURRENT_DIR}/lib/textcleaner2" -g -e stretch -f 25 -o 10 -u -s 1 -T -p 10 "$INPUT" "$OUTPUT_DIR/$BASENAME"
-    #magick "$INPUT" -deskew 40% -colorspace Gray -despeckle -contrast-stretch 0 -trim +repage -threshold 50% "$OUTPUT_DIR/$BASENAME"
 
-    orientation=$(convert "$INPUT" -resize 100x100\! -format "%[fx:(w>h)?90:0]" info:)
-    convert "$INPUT" -rotate "$orientation" -deskew 40% -gravity center -crop 2480x3508+0+0 -colorspace Gray -despeckle -contrast-stretch 2%x90% -trim +repage -threshold 60% "$OUTPUT_DIR/$BASENAME"
+    convert "$INPUT" -deskew 40% -gravity center -crop 2480x3508+0+0 -colorspace Gray -despeckle -contrast-stretch 2%x98% -trim +repage -threshold 60% "$OUTPUT_DIR/$BASENAME"
 
 
     retval=$?
