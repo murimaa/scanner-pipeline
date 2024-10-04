@@ -36,3 +36,4 @@ pipeline_input/
 
 docker-compose-example/input
 docker-compose-example/output
+docker-compose-example/docker-compose.yml

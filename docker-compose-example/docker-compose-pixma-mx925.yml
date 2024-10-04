@@ -4,6 +4,8 @@ services:
       context: ..
       dockerfile: Dockerfile
     image: app-base
+    entrypoint: echo "app-base is free to exit."
+
   app:
     build:
       context: .

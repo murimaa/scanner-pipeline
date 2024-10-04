@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Save the first argument as the input directory
 INPUT_DIR=$1
@@ -44,7 +44,7 @@ for INPUT in "$INPUT_DIR"/*; do
       # Check if file size is greater than 10KB (10240 bytes)
       if [ $FILE_SIZE -gt 10240 ]; then
         echo "  -> $ORIGINAL_NAME -> flip $OUTPUT_FILENAME"
-        magick "$INPUT" -rotate 180 "$OUTPUT_FILENAME"
+        convert "$INPUT" -rotate 180 "$OUTPUT_FILENAME"
       else
         echo "  -> $ORIGINAL_NAME -> copy (file size <= 10KB) $OUTPUT_FILENAME"
         cp "$INPUT" "$OUTPUT_FILENAME"

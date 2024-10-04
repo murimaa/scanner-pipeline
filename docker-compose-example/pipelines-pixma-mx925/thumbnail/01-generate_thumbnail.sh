@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Function to process a single file
 process_file() {
     local INPUT=$1
     local OUTPUT_DIR=$2
     local OUTPUT_FILE="${OUTPUT_DIR}/$(basename "${INPUT%.*}").webp"
-    magick "${INPUT}" -strip -resize '1000x1000>' -quality 80 -define webp:lossless=false -define webp:method=6 "${OUTPUT_FILE}"
+    convert "${INPUT}" -strip -resize '1000x1000>' -quality 80 -define webp:lossless=false -define webp:method=6 "${OUTPUT_FILE}"
     echo "Generated thumbnail: $INPUT -> $OUTPUT_FILE"
 }
 

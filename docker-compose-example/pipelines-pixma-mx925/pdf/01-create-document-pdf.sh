@@ -1,6 +1,6 @@
 #!/bin/bash
 # Check if the required tools are installed
-command -v magick >/dev/null 2>&1 || { echo >&2 "Error: magick is not installed. Please install it and try again."; exit 1; }
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Check if a directory argument is provided
 if [ $# -eq 0 ]; then
@@ -62,7 +62,7 @@ if [ ${#IMAGE_PAGES[@]} -eq 0 ]; then
 fi
 
 echo "Making pdf $OUTPUT_FILE"
-magick "${IMAGE_PAGES[@]}" -density 72 -page a4 pdf:"$OUTPUT_FILE"
+convert "${IMAGE_PAGES[@]}" -density 72 -page a4 pdf:"$OUTPUT_FILE"
 retval=$?
 if [ $retval -ne 0 ]; then
     echo "Non-zero return value: $retval - exiting."
