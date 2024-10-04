@@ -59,6 +59,7 @@ defmodule WebWeb.ThumbnailController do
            |> File.ls() do
       files
       |> Enum.filter(&image?/1)
+      |> Enum.sort()
       |> Enum.map(&%{name: &1, url: thumbnail_url(&1)})
     else
       {:error, _} -> []
