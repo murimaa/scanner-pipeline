@@ -50,7 +50,7 @@ defmodule DocumentPipeline.FileWatcher do
     {:noreply, state}
   end
 
-  defp wait_for_file_size_stabilization(path, attempts \\ 10, delay \\ 500)
+  defp wait_for_file_size_stabilization(path, attempts \\ 10, delay \\ 1000)
 
   defp wait_for_file_size_stabilization(path, 0, _),
     do: Logger.warning("File size did not stabilize: #{path}")
