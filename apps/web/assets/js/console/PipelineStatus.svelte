@@ -1,5 +1,5 @@
 <script>
-    import { pipelineStatus } from "./store.js";
+    import { pipelineStatus } from "../store.js";
 
     function getStatusColor({ message }) {
         if (message.includes("failed")) return "red";

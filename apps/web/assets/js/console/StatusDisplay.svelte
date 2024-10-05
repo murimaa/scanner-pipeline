@@ -1,5 +1,5 @@
 <script>
-    import { formattedStatuses } from "./store.js";
+    import { formattedStatuses } from "../store.js";
     import StatusRow from "./StatusRow.svelte";
 </script>
 

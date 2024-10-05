@@ -2,13 +2,13 @@
     import { onMount, onDestroy } from "svelte";
     import { derived } from "svelte/store";
 
-    import { documents, thumbnails } from "./store.js";
-    import { createEventSourceManager } from "./eventSourceManager.js";
+    import { documents, thumbnails } from "../store.js";
+    import { createEventSourceManager } from "../eventSourceManager.js";
     import {
         TRANSITION_DURATION,
         RECONNECT_DELAY,
         API_ENDPOINTS,
-    } from "./constants.js";
+    } from "../constants.js";
     import { fly, fade } from "svelte/transition";
     export let dropTarget;
 
@@ -132,7 +132,6 @@
 
 <div class="main-container">
     <div class="thumbnail-container">
-        <h2>Available Pages</h2>
         {#each $derivedPages.remainingThumbnails as thumbnail (thumbnail.name)}
             <div
                 class="thumbnail"
@@ -163,17 +162,11 @@
 </div>
 
 <style>
-    .main-container {
-        flex: 2;
-    }
     .thumbnail-container {
-        flex: 2;
         display: flex;
         flex-direction: column;
         gap: 10px;
         padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
     }
 
     .thumbnail {
@@ -183,12 +176,6 @@
     }
 
     .thumbnail img,
-    .thumbnail p {
-        margin-top: 5px;
-        font-size: 0.8em;
-        word-break: break-all;
-    }
-
     .delete-btn,
     .select-btn {
         background-color: rgba(255, 255, 255, 0.7);
@@ -233,10 +220,5 @@
 
     .select-btn:hover {
         background-color: rgba(0, 200, 0, 0.7);
-    }
-
-    h2 {
-        text-align: center;
-        margin-bottom: 10px;
     }
 </style>

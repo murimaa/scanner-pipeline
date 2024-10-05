@@ -1,9 +1,10 @@
 <script>
     import { onMount, onDestroy, tick } from "svelte";
-    import { documents } from "./store.js";
+    import { documents } from "../store.js";
+    import { TRANSITION_DURATION } from "../constants.js";
     import { writable, derived } from "svelte/store";
     import DropTarget from "./DropTarget.svelte";
-    import { TRANSITION_DURATION } from "./constants.js";
+
     export let dropTarget;
     let selectedPages = [];
     let thumbnails = [];
@@ -39,18 +40,20 @@
 </script>
 
 <div class="container">
-    <h2>Selected Pages</h2>
     {#each $delayedDocuments as document}
         {#if document.length > 0}
             <div class="document-cover">
                 <img src={document[0].url} alt={document[0].name} />
+                <div class="metadata">
+                    {document.length}
+                    {document.length == 1 ? "page" : "pages"}
+                </div>
                 <button
                     class="unselect-btn"
                     on:click={() => unselectDocument(document)}
                 >
                     Unselect
                 </button>
-                <p>{document[0].name}</p>
             </div>
         {/if}
     {/each}
@@ -58,19 +61,21 @@
 </div>
 
 <style>
-    .container {
-        flex: 1;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-    }
     .document-cover {
         position: relative;
+    }
+    .metadata {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+        padding: 5px 10px;
     }
     .unselect-btn {
         position: absolute;
         left: 5px;
-        background-color: rgba(255, 0, 0, 0.7);
+        background-color: rgba(255, 0, 0, 0.85);
         color: white;
         top: 5px;
         border: none;
