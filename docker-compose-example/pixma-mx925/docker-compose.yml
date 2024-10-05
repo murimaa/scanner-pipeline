@@ -1,7 +1,7 @@
 services:
   app-base:
     build:
-      context: ..
+      context: ../..
       dockerfile: Dockerfile
     image: app-base
     entrypoint: echo "app-base is free to exit."
@@ -9,15 +9,20 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile-pixma-mx925
       args:
         - PRINTER_IP=
     depends_on:
       - app-base
     ports:
       - "4000:4000"
+    env_file: .env
     environment:
-      - SECRET_KEY_BASE=eBFsj2MQi3pT2mJ7+Qgxji1MmVaH5vUTm33i+/868Kl6sj4Y0oJzAeUxwq0fxZCr
+      # SECRET_KEY_BASE must be a 64-byte random string
+      # Generate with:
+      # openssl rand -base64 64 | tr -d '\n'
+      # or
+      # mix phx.gen.secret
+      - SECRET_KEY_BASE=
       - PORT=4000
       - HOST=localhost
       - PIPELINE_PATH=/app/pipelines
@@ -25,6 +30,6 @@ services:
       - OUTPUT_PATH=/app/output
       - TMP_PATH=/app/tmp
     volumes:
-      - ./pipelines-pixma-mx925:/app/pipelines
+      - ./pipelines:/app/pipelines
       - ./input:/app/input
       - ./output:/app/output
