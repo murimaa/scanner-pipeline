@@ -1,12 +1,18 @@
 <script>
+    import SelectedPages from "./SelectedPages.svelte";
     import PipelineConsole from "./PipelineConsole.svelte";
     import PipelineRunner from "./PipelineRunner.svelte";
-    import ThumbnailDisplay from "./ThumbnailDisplay.svelte";
+    import AvailablePages from "./AvailablePages.svelte";
+
+    let dropTargetElement;
 </script>
 
 <main>
     <PipelineRunner />
-    <ThumbnailDisplay />
+    <div class="documents">
+        <SelectedPages bind:dropTarget={dropTargetElement} />
+        <AvailablePages dropTarget={dropTargetElement} />
+    </div>
     <h2>Pipeline Runner</h2>
     <PipelineConsole />
 </main>
@@ -18,8 +24,12 @@
         margin: 0 auto;
         padding: 20px;
     }
-
-    h1,
+    .documents {
+        display: flex;
+        gap: 20px;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
     h2 {
         text-align: center;
         color: #333;

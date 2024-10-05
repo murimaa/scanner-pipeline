@@ -1,5 +1,7 @@
 <script>
     import { onMount, onDestroy } from "svelte";
+    import { derived } from "svelte/store";
+
     import { documents, thumbnails } from "./store.js";
     import { createEventSourceManager } from "./eventSourceManager.js";
     import {
@@ -8,11 +10,10 @@
         API_ENDPOINTS,
     } from "./constants.js";
     import { fly, fade } from "svelte/transition";
+    export let dropTarget;
 
     let eventSourceManager;
     let selectedPages = [];
-    let selectedContainer;
-
     onMount(() => {
         eventSourceManager = createEventSourceManager(
             API_ENDPOINTS.THUMBNAIL_STREAM,
@@ -77,25 +78,24 @@
                 .slice(0, index + 1)
                 .filter((t) => !selectedPages.some((s) => s.name === t.name));
             selectedPages = [...selectedPages, ...pagesToAdd];
-            setTimeout(() => {
-                $documents = [...$documents, pagesToAdd];
-            }, TRANSITION_DURATION);
+            $documents = [...$documents, pagesToAdd];
         }
     }
 
-    function unselectDocument(document) {
-        const newDocuments = $documents.filter((d) => d !== document);
-        selectedPages = $thumbnails.filter((t) =>
-            newDocuments
-                .flat()
-                .map((p) => p.name)
-                .includes(t.name),
-        );
-        $documents = newDocuments;
-    }
-
-    $: remainingThumbnails = $thumbnails.filter(
-        (t) => !selectedPages.some((s) => s.name === t.name),
+    const derivedPages = derived(
+        [documents, thumbnails],
+        ([$documents, $thumbnails]) => {
+            const selectedPages = $thumbnails.filter((t) =>
+                $documents
+                    .flat()
+                    .map((p) => p.name)
+                    .includes(t.name),
+            );
+            const remainingThumbnails = $thumbnails.filter(
+                (t) => !selectedPages.some((s) => s.name === t.name),
+            );
+            return { selectedPages, remainingThumbnails };
+        },
     );
 
     function flyAndScale(node, { delay = 0, duration = 400, target } = {}) {
@@ -129,33 +129,13 @@
 </script>
 
 <div class="main-container">
-    <div class="selected-container">
-        <h2>Selected Pages</h2>
-
-        {#each $documents as document}
-            {#if document.length > 0}
-                <div class="selected-page">
-                    <img src={document[0].url} alt={document[0].name} />
-                    <button
-                        class="unselect-btn"
-                        on:click={() => unselectDocument(document)}
-                    >
-                        Unselect
-                    </button>
-                    <p>{document[0].name}</p>
-                </div>
-            {/if}
-        {/each}
-        <div class="drop-target" bind:this={selectedContainer}></div>
-    </div>
-
     <div class="thumbnail-container">
         <h2>Available Pages</h2>
-        {#each remainingThumbnails as thumbnail (thumbnail.name)}
+        {#each $derivedPages.remainingThumbnails as thumbnail (thumbnail.name)}
             <div
                 class="thumbnail"
                 out:flyAndScale={{
-                    target: selectedContainer,
+                    target: dropTarget,
                     duration: TRANSITION_DURATION,
                     delay: 0,
                 }}
@@ -181,22 +161,14 @@
 
 <style>
     .main-container {
-        display: flex;
-        gap: 20px;
-        max-width: 100%;
-        overflow-x: hidden;
+        flex: 2;
     }
-
-    .selected-container,
     .thumbnail-container {
         display: flex;
         flex-direction: column;
         gap: 10px;
         padding: 10px;
         border-radius: 5px;
-    }
-    .selected-container {
-        flex: 1;
     }
     .thumbnail-container {
         flex: 2;
@@ -212,11 +184,6 @@
 
     .selected-page img,
     .thumbnail img,
-    .drop-target {
-        width: 100%;
-        height: auto;
-    }
-
     .selected-page p,
     .thumbnail p {
         margin-top: 5px;
@@ -224,7 +191,6 @@
         word-break: break-all;
     }
 
-    .unselect-btn,
     .delete-btn,
     .select-btn {
         position: absolute;
@@ -235,12 +201,6 @@
         padding: 5px 10px;
         font-size: 14px;
         cursor: pointer;
-    }
-
-    .unselect-btn {
-        left: 5px;
-        background-color: rgba(255, 0, 0, 0.7);
-        color: white;
     }
 
     .delete-btn {
