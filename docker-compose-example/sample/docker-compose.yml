@@ -1,0 +1,33 @@
+services:
+  app-base:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: app-base
+    entrypoint: echo "app-base is free to exit."
+
+  app:
+    build:
+      context: .
+    depends_on:
+      - app-base
+    ports:
+      - "4000:4000"
+    env_file: .env
+    environment:
+      # SECRET_KEY_BASE must be a 64-byte random string
+      # Generate with:
+      # openssl rand -base64 64 | tr -d '\n'
+      # or
+      # mix phx.gen.secret
+      # - SECRET_KEY_BASE=
+      - PORT=4000
+      - HOST=localhost
+      - PIPELINE_PATH=/app/pipelines
+      - INPUT_PATH=/app/input
+      - OUTPUT_PATH=/app/output
+      - TMP_PATH=/app/tmp
+    volumes:
+      - ./pipelines:/app/pipelines
+      - ./input:/app/input
+      - ./output:/app/output

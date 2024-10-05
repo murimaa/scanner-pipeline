@@ -34,6 +34,5 @@ sample_scans/
 sample_pipelines/
 pipeline_input/
 
-docker-compose-example/input
-docker-compose-example/output
-docker-compose-example/docker-compose.yml
+docker-compose-example/**/input/*
+docker-compose-example/**/output/*
