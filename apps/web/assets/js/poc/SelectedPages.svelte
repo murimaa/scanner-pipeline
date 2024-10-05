@@ -43,13 +43,16 @@
         {#if document.length > 0}
             <div class="document-cover">
                 <img src={document[0].url} alt={document[0].name} />
+                <div class="metadata">
+                    {document.length}
+                    {document.length == 1 ? "page" : "pages"}
+                </div>
                 <button
                     class="unselect-btn"
                     on:click={() => unselectDocument(document)}
                 >
                     Unselect
                 </button>
-                <p>{document[0].name}</p>
             </div>
         {/if}
     {/each}
@@ -57,15 +60,21 @@
 </div>
 
 <style>
-    .container {
-    }
     .document-cover {
         position: relative;
+    }
+    .metadata {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+        padding: 5px 10px;
     }
     .unselect-btn {
         position: absolute;
         left: 5px;
-        background-color: rgba(255, 0, 0, 0.7);
+        background-color: rgba(255, 0, 0, 0.85);
         color: white;
         top: 5px;
         border: none;
