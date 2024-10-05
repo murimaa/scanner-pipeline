@@ -13,7 +13,7 @@
     export let dropTarget;
 
     let eventSourceManager;
-    let selectedPages = [];
+    // let selectedPages = [];
     onMount(() => {
         eventSourceManager = createEventSourceManager(
             API_ENDPOINTS.THUMBNAIL_STREAM,
@@ -59,9 +59,7 @@
             );
             if (response.ok) {
                 // Remove from selectedPages if it was selected
-                selectedPages = selectedPages.filter(
-                    (p) => p.name !== filename,
-                );
+                $thumbnails = $thumbnails.filter((p) => p.name !== filename);
             } else {
                 console.error("Failed to delete thumbnail");
             }
@@ -76,8 +74,13 @@
         if (index !== -1) {
             const pagesToAdd = $thumbnails
                 .slice(0, index + 1)
-                .filter((t) => !selectedPages.some((s) => s.name === t.name));
-            selectedPages = [...selectedPages, ...pagesToAdd];
+                .filter(
+                    (t) =>
+                        !$derivedPages.selectedPages.some(
+                            (s) => s.name === t.name,
+                        ),
+                );
+            // const selectedPages = [...derivedPages.selectedPages, ...pagesToAdd];
             $documents = [...$documents, pagesToAdd];
         }
     }
@@ -164,27 +167,22 @@
         flex: 2;
     }
     .thumbnail-container {
+        flex: 2;
         display: flex;
         flex-direction: column;
         gap: 10px;
         padding: 10px;
         border-radius: 5px;
-    }
-    .thumbnail-container {
-        flex: 2;
         border: 1px solid #ccc;
     }
 
-    .selected-page,
     .thumbnail {
         position: relative;
         width: 100%;
         text-align: center;
     }
 
-    .selected-page img,
     .thumbnail img,
-    .selected-page p,
     .thumbnail p {
         margin-top: 5px;
         font-size: 0.8em;
@@ -210,10 +208,6 @@
     .select-btn {
         left: 5px;
         background-color: rgba(0, 255, 0, 0.7);
-    }
-
-    .unselect-btn:hover {
-        background-color: rgba(200, 0, 0, 0.7);
     }
 
     .delete-btn:hover {
