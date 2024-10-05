@@ -31,7 +31,6 @@
             const fileList = document.map((page) =>
                 page.name.substring(0, page.name.lastIndexOf(".")),
             );
-
             try {
                 const response = await fetch(API_ENDPOINTS.GENERATE_PDF, {
                     method: "POST",
@@ -43,6 +42,13 @@
 
                 if (response.ok) {
                     appendPipelineStatus(null, "PDF generated successfully");
+                    $thumbnails = $thumbnails.filter((page) => {
+                        const basename = page.name.substring(
+                            0,
+                            page.name.lastIndexOf("."),
+                        );
+                        return !fileList.includes(basename);
+                    });
                 } else {
                     throw new Error("Failed to generate PDF");
                 }

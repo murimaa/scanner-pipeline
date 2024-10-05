@@ -1,9 +1,9 @@
 import Config
 
 config :document_pipeline,
-  pipeline_path: Path.expand("sample_pipelines", File.cwd!()),
-  input_path: Path.expand("sample_scans", File.cwd!()),
-  output_path: Path.expand("test_output", File.cwd!()),
+  pipeline_path: Path.expand("docker-compose-example/sample/pipelines", File.cwd!()),
+  input_path: Path.expand("docker-compose-example/sample/input", File.cwd!()),
+  output_path: Path.expand("dev_output", File.cwd!()),
   tmp_path: Path.expand("tmp", File.cwd!())
 
 # For development, we disable any cache and enable

@@ -33,6 +33,7 @@ document_pipeline-*.tar
 sample_scans/
 sample_pipelines/
 pipeline_input/
+dev_output/
 
 docker-compose-example/**/input/*
 docker-compose-example/**/output/*
