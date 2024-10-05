@@ -80,7 +80,6 @@
                             (s) => s.name === t.name,
                         ),
                 );
-            // const selectedPages = [...derivedPages.selectedPages, ...pagesToAdd];
             $documents = [...$documents, pagesToAdd];
         }
     }
@@ -150,13 +149,14 @@
                 >
                     🗑️
                 </button>
-                <button
-                    class="select-btn"
-                    on:click={() => selectPage(thumbnail)}
-                >
-                    Select
-                </button>
-                <p>{thumbnail.name}</p>
+                <div class="cut">
+                    <button
+                        class="select-btn"
+                        on:click={() => selectPage(thumbnail)}
+                    >
+                        Cut
+                    </button>
+                </div>
             </div>
         {/each}
     </div>
@@ -191,8 +191,6 @@
 
     .delete-btn,
     .select-btn {
-        position: absolute;
-        top: 5px;
         background-color: rgba(255, 255, 255, 0.7);
         border: none;
         border-radius: 5px;
@@ -202,12 +200,30 @@
     }
 
     .delete-btn {
+        position: absolute;
+        top: 5px;
         right: 5px;
     }
 
-    .select-btn {
-        left: 5px;
+    .cut {
+        position: relative;
+        padding: 5px 0;
+    }
+
+    .cut::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed darkgray;
+        z-index: 1;
+    }
+
+    .cut button {
         background-color: rgba(0, 255, 0, 0.7);
+        position: relative; /* Add this line */
+        z-index: 2; /* Ensure the button is above the line */
     }
 
     .delete-btn:hover {
