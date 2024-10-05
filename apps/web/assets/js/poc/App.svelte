@@ -39,10 +39,18 @@
 </script>
 
 <main bind:this={main}>
-    <PipelineRunner />
+    <div class="buttons-wrapper">
+        <PipelineRunner />
+    </div>
     <div class="documents">
-        <SelectedPages bind:dropTarget={dropTargetElement} />
-        <AvailablePages dropTarget={dropTargetElement} />
+        <div class="container selected">
+            <h2>Documents</h2>
+            <SelectedPages bind:dropTarget={dropTargetElement} />
+        </div>
+        <div class="container available">
+            <h2>Available pages</h2>
+            <AvailablePages dropTarget={dropTargetElement} />
+        </div>
     </div>
 </main>
 <div class="console-wrapper" bind:this={consoleWrapper}>
@@ -61,6 +69,25 @@
         gap: 20px;
         max-width: 100%;
         overflow-x: hidden;
+    }
+    .container {
+        border-radius: 15px;
+        padding: 15px;
+    }
+    .container h2 {
+        text-align: center;
+        font-size: 1.25rem;
+    }
+    .container.available {
+        flex: 2;
+        border: 5px #f0f0f0 solid;
+    }
+    .container.selected {
+        flex: 1;
+        background-color: #f0f0f0;
+    }
+    .buttons-wrapper {
+        margin: 1rem 0;
     }
     .console-wrapper {
         position: fixed;

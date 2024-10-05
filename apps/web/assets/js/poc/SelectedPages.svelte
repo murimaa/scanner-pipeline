@@ -39,7 +39,6 @@
 </script>
 
 <div class="container">
-    <h2>Selected Pages</h2>
     {#each $delayedDocuments as document}
         {#if document.length > 0}
             <div class="document-cover">
@@ -59,10 +58,6 @@
 
 <style>
     .container {
-        flex: 1;
-        padding: 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
     }
     .document-cover {
         position: relative;
