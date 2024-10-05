@@ -1,6 +1,6 @@
 <script>
     //export let isRunning;
-    import { isRunning } from "./store.js";
+    import { isRunning } from "../store.js";
     export let text = "foo";
 </script>
 

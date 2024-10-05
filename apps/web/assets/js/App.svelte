@@ -1,9 +1,9 @@
 <script>
     import { onMount, afterUpdate } from "svelte";
-    import SelectedPages from "./SelectedPages.svelte";
-    import PipelineConsole from "./PipelineConsole.svelte";
-    import PipelineRunner from "./PipelineRunner.svelte";
-    import AvailablePages from "./AvailablePages.svelte";
+    import SelectedPages from "./documents/SelectedPages.svelte";
+    import AvailablePages from "./documents/AvailablePages.svelte";
+    import PipelineConsole from "./console/PipelineConsole.svelte";
+    import PipelineRunner from "./toolbar/PipelineRunner.svelte";
 
     let dropTargetElement;
     let consoleWrapper;

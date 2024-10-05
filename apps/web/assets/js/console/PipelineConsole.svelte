@@ -1,9 +1,9 @@
 <script>
     import { onMount, onDestroy } from "svelte";
-    import { isRunning, pipelineStatus, scriptStatuses } from "./store.js";
+    import { isRunning, pipelineStatus, scriptStatuses } from "../store.js";
+    import { createEventSourceManager } from "../eventSourceManager.js";
+    import { RECONNECT_DELAY, API_ENDPOINTS } from "../constants.js";
     import StatusDisplay from "./StatusDisplay.svelte";
-    import { createEventSourceManager } from "./eventSourceManager.js";
-    import { RECONNECT_DELAY, API_ENDPOINTS } from "./constants.js";
 
     let eventSourceManager;
 

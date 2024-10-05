@@ -2,13 +2,13 @@
     import { onMount, onDestroy } from "svelte";
     import { derived } from "svelte/store";
 
-    import { documents, thumbnails } from "./store.js";
-    import { createEventSourceManager } from "./eventSourceManager.js";
+    import { documents, thumbnails } from "../store.js";
+    import { createEventSourceManager } from "../eventSourceManager.js";
     import {
         TRANSITION_DURATION,
         RECONNECT_DELAY,
         API_ENDPOINTS,
-    } from "./constants.js";
+    } from "../constants.js";
     import { fly, fade } from "svelte/transition";
     export let dropTarget;
 

@@ -5,9 +5,9 @@
         pipelineStatus,
         thumbnails,
         documents,
-    } from "./store.js";
+    } from "../store.js";
     import PipelineButton from "./PipelineButton.svelte";
-    import { API_ENDPOINTS } from "./constants.js";
+    import { API_ENDPOINTS } from "../constants.js";
 
     function appendPipelineStatus(executionId, message) {
         $pipelineStatus = [...$pipelineStatus, { message }];

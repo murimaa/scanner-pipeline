@@ -1,9 +1,10 @@
 <script>
     import { onMount, onDestroy, tick } from "svelte";
-    import { documents } from "./store.js";
+    import { documents } from "../store.js";
+    import { TRANSITION_DURATION } from "../constants.js";
     import { writable, derived } from "svelte/store";
     import DropTarget from "./DropTarget.svelte";
-    import { TRANSITION_DURATION } from "./constants.js";
+
     export let dropTarget;
     let selectedPages = [];
     let thumbnails = [];
