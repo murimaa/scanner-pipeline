@@ -60,6 +60,9 @@
 <style>
     .container {
         flex: 1;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
     }
     .document-cover {
         position: relative;
@@ -75,5 +78,8 @@
         padding: 5px 10px;
         font-size: 14px;
         cursor: pointer;
+    }
+    .unselect-btn:hover {
+        background-color: rgba(200, 0, 0, 0.7);
     }
 </style>
