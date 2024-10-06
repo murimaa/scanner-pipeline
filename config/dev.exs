@@ -4,7 +4,8 @@ config :document_pipeline,
   pipeline_path: Path.expand("docker-compose-example/sample/pipelines", File.cwd!()),
   input_path: Path.expand("docker-compose-example/sample/input", File.cwd!()),
   output_path: Path.expand("dev_output", File.cwd!()),
-  tmp_path: Path.expand("tmp", File.cwd!())
+  tmp_path: Path.expand("tmp", File.cwd!()),
+  yaml_config: Path.expand("docker-compose-example/sample/config.yaml", File.cwd!())
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
