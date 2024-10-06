@@ -52,7 +52,7 @@
     async function deleteThumbnail(filename) {
         try {
             const response = await fetch(
-                `${API_ENDPOINTS.DELETE_PAGE}/${stripExtension(filename)}`,
+                `${API_ENDPOINTS.DELETE_PAGE}?page=${filename}`,
                 {
                     method: "DELETE",
                 },

@@ -6,7 +6,7 @@ export const API_ENDPOINTS = {
   STATUS_STREAM: "/api/console/status_stream",
   SCAN_PIPELINE: "/api/pipeline/scan",
   GENERATE_PDF: "/api/pipeline/generate-pdf",
-  DELETE_PAGE: "/api/pages",
+  DELETE_PAGE: "/api/page",
 };
 export const STATUS_COLORS = {
   DEFAULT: "black",

@@ -63,7 +63,7 @@ defmodule WebWeb.PipelineController do
     |> json(%{message: "PDF generation started"})
   end
 
-  def delete_page(conn, %{"filename" => filename}) do
+  def delete_page(conn, %{"page" => filename}) do
     case delete_page_and_thumbnail(filename) do
       :ok ->
         send_resp(conn, :no_content, "")
@@ -99,34 +99,29 @@ defmodule WebWeb.PipelineController do
   end
 
   defp delete_page_and_thumbnail(filename) do
-    originals_dir =
-      Path.join([
-        Application.get_env(:document_pipeline, :output_path),
-        "scan"
-      ])
+    with {:ok, filename} <- Path.safe_relative(filename),
+         true <- Path.dirname(filename) in Web.Config.scan_pipelines(),
+         full_path <-
+           Path.join([Application.get_env(:document_pipeline, :output_path), filename]),
+         true <- File.exists?(full_path) do
+      case File.rm(full_path) do
+        :ok ->
+          ThumbnailCache.delete_thumbnail(full_path)
+          :ok
 
-    thumbnails_dir =
-      Path.join([
-        Application.get_env(:document_pipeline, :output_path),
-        "thumbnail"
-      ])
-
-    thumbnail_filename = "#{filename}.webp"
-    original_filename = "#{filename}.png"
-    thumbnail_full_path = Path.join([thumbnails_dir, thumbnail_filename])
-    original_full_path = Path.join([originals_dir, original_filename])
-
-    with {:ok, _} <- Path.safe_relative(filename, thumbnails_dir),
-         {:ok, _} <- Path.safe_relative(filename, originals_dir),
-         true <- File.exists?(thumbnail_full_path) and File.exists?(original_full_path),
-         # true <- image?(filename),
-         :ok <- File.rm(thumbnail_full_path),
-         :ok <- File.rm(original_full_path) do
-      :ok
+        {:error, reason} ->
+          {:error, reason}
+      end
     else
-      :error -> {:error, :invalid_path}
-      false -> {:error, :not_found}
-      {:error, reason} -> {:error, reason}
+      false ->
+        {:error, :not_found}
+
+      :error ->
+        # Path.safe_relative
+        {:error, :invalid_path}
+
+      _ ->
+        {:error, :not_found}
     end
   end
 end

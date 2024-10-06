@@ -29,7 +29,7 @@ defmodule WebWeb.Router do
     pipe_through(:api)
     post("/pipeline/scan", PipelineController, :scan)
     post("/pipeline/generate-pdf", PipelineController, :generate_pdf)
-    delete("/pages/:filename", PipelineController, :delete_page)
+    delete("/page", PipelineController, :delete_page)
   end
 
   scope "/api", WebWeb do

@@ -20,6 +20,10 @@ defmodule ThumbnailCache do
     GenServer.call(__MODULE__, {:get_thumbnail, image_file})
   end
 
+  def delete_thumbnail(image_file) do
+    GenServer.call(__MODULE__, {:delete_thumbnail, image_file})
+  end
+
   def handle_call({:get_thumbnail, image_file}, _from, state) do
     case :ets.lookup(@table_name, image_file) do
       [{^image_file, thumbnail_path}] ->
@@ -34,6 +38,18 @@ defmodule ThumbnailCache do
           {:error, reason} ->
             {:reply, {:error, reason}, state}
         end
+    end
+  end
+
+  def handle_call({:delete_thumbnail, image_file}, _from, state) do
+    case :ets.lookup(@table_name, image_file) do
+      [{^image_file, thumbnail_path}] ->
+        :ets.delete(@table_name, image_file)
+        delete_file_result = delete_file(thumbnail_path)
+        {:reply, delete_file_result, state}
+
+      [] ->
+        {:reply, {:error, :not_found}, state}
     end
   end
 
@@ -107,5 +123,12 @@ defmodule ThumbnailCache do
       end)
 
     if thumbnail_filename != nil, do: Path.join(thumbnail_path, thumbnail_filename), else: nil
+  end
+
+  defp delete_file(path) do
+    case File.rm(path) do
+      :ok -> {:ok, :deleted}
+      {:error, reason} -> {:error, reason}
+    end
   end
 end
