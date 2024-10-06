@@ -28,16 +28,14 @@
     async function generatePDF() {
         appendPipelineStatus(null, "Generating PDF...");
         $documents.forEach(async (document) => {
-            const fileList = document.map((page) =>
-                page.name.substring(0, page.name.lastIndexOf(".")),
-            );
+            const fileList = document.map((page) => page.name);
             try {
                 const response = await fetch(API_ENDPOINTS.GENERATE_PDF, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ files: fileList }),
+                    body: JSON.stringify({ pages: fileList }),
                 });
 
                 if (response.ok) {

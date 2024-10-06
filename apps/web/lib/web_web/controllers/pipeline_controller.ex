@@ -18,49 +18,24 @@ defmodule WebWeb.PipelineController do
     |> json(%{})
   end
 
-  def generate_pdf(conn, params) do
-    originals_dir =
-      Path.join([
-        Application.get_env(:document_pipeline, :output_path),
-        "scan"
-      ])
+  def generate_pdf(conn, %{"pages" => pages}) do
+    case validate_pages(pages) do
+      {:ok, valid_pages} ->
+        # All pages are valid, proceed with PDF generation
+        Task.start(fn ->
+          generate_pdf_task(valid_pages)
+        end)
 
-    unique_string = :crypto.strong_rand_bytes(16) |> Base.url_encode64() |> binary_part(0, 16)
-    temp_dir = Path.join([System.tmp_dir!(), unique_string])
+        conn
+        |> put_status(200)
+        |> json(%{message: "PDF generation started"})
 
-    files = params["files"]
-
-    File.mkdir_p!(temp_dir)
-
-    Enum.each(files, fn file ->
-      source_path = Path.join(originals_dir, "#{file}.png")
-      dest_path = Path.join(temp_dir, "#{file}.png")
-      File.cp!(source_path, dest_path)
-    end)
-
-    Task.start(fn ->
-      {:ok, pid} =
-        DocumentPipeline.DynamicSupervisor.start_child("pdf", temp_dir)
-
-      execution_id = DocumentPipeline.Server.get_execution_id(pid)
-      Phoenix.PubSub.subscribe(@pubsub, "#{@topic}:#{execution_id}")
-
-      case wait_for_pipeline_to_finish() do
-        :ok ->
-          Enum.each(files, fn file ->
-            delete_page_and_thumbnail(file)
-          end)
-
-        :error ->
-          nil
-      end
-
-      File.rm_rf!(temp_dir)
-    end)
-
-    conn
-    |> put_status(200)
-    |> json(%{message: "PDF generation started"})
+      {:error, reason} ->
+        conn
+        |> put_status(:bad_request)
+        |> json(%{error: reason})
+        |> halt()
+    end
   end
 
   def delete_page(conn, %{"page" => filename}) do
@@ -85,43 +60,89 @@ defmodule WebWeb.PipelineController do
     end
   end
 
-  defp wait_for_pipeline_to_finish() do
+  defp wait_for_pipeline_to_finish(execution_id) do
     receive do
-      {:pipeline_message, _execution_id, %{event: :pipeline_failed, pipeline: _}} ->
+      {:pipeline_message, execution_id, %{event: :pipeline_failed, pipeline: _}} ->
         :error
 
-      {:pipeline_message, _execution_id, %{event: :pipeline_finished, pipeline: _}} ->
+      {:pipeline_message, execution_id, %{event: :pipeline_finished, pipeline: _}} ->
         :ok
 
       _ ->
-        wait_for_pipeline_to_finish()
+        wait_for_pipeline_to_finish(execution_id)
     end
   end
 
-  defp delete_page_and_thumbnail(filename) do
-    with {:ok, filename} <- Path.safe_relative(filename),
-         true <- Path.dirname(filename) in Web.Config.scan_pipelines(),
-         full_path <-
-           Path.join([Application.get_env(:document_pipeline, :output_path), filename]),
-         true <- File.exists?(full_path) do
-      case File.rm(full_path) do
-        :ok ->
-          ThumbnailCache.delete_thumbnail(full_path)
-          :ok
+  defp delete_page_and_thumbnail(page_relative_path) do
+    case validate_and_get_full_path(page_relative_path) do
+      {:ok, full_path} ->
+        case File.rm(full_path) do
+          :ok ->
+            ThumbnailCache.delete_thumbnail(full_path)
+            :ok
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+          {:error, reason} ->
+            {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp validate_and_get_full_path(page_relative_path) do
+    with {:ok, page_relative_path} <- Path.safe_relative(page_relative_path),
+         true <- Path.dirname(page_relative_path) in Web.Config.scan_pipelines(),
+         full_path <-
+           Path.join([Application.get_env(:document_pipeline, :output_path), page_relative_path]),
+         true <- File.exists?(full_path) do
+      {:ok, full_path}
     else
-      false ->
-        {:error, :not_found}
+      false -> {:error, :not_found}
+      :error -> {:error, :invalid_path}
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp validate_pages(pages) do
+    case Enum.reduce_while(pages, [], &validate_and_accumulate_page/2) do
+      {:error, reason} -> {:error, reason}
+      valid_pages -> {:ok, Enum.reverse(valid_pages)}
+    end
+  end
+
+  defp validate_and_accumulate_page(page, acc) do
+    case validate_and_get_full_path(page) do
+      {:ok, full_path} -> {:cont, [full_path | acc]}
+      {:error, _reason} -> {:halt, {:error, "Invalid page filename: #{page}"}}
+    end
+  end
+
+  defp generate_pdf_task(valid_pages) do
+    unique_string = :crypto.strong_rand_bytes(16) |> Base.url_encode64() |> binary_part(0, 16)
+    temp_dir = Path.join([System.tmp_dir!(), unique_string])
+    File.mkdir_p!(temp_dir)
+
+    Enum.each(valid_pages, fn source_path ->
+      dest_path = Path.join(temp_dir, Path.basename(source_path))
+      File.cp!(source_path, dest_path)
+    end)
+
+    {:ok, pid} = DocumentPipeline.DynamicSupervisor.start_child("pdf", temp_dir)
+    execution_id = DocumentPipeline.Server.get_execution_id(pid)
+    Phoenix.PubSub.subscribe(@pubsub, "#{@topic}:#{execution_id}")
+
+    case wait_for_pipeline_to_finish(execution_id) do
+      :ok ->
+        Enum.each(valid_pages, fn page_full_path ->
+          :ok = File.rm(page_full_path)
+          ThumbnailCache.delete_thumbnail(page_full_path)
+        end)
 
       :error ->
-        # Path.safe_relative
-        {:error, :invalid_path}
-
-      _ ->
-        {:error, :not_found}
+        nil
     end
+
+    File.rm_rf!(temp_dir)
   end
 end
