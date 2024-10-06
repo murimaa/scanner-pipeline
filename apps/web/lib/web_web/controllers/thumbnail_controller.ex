@@ -14,20 +14,21 @@ defmodule WebWeb.ThumbnailController do
     stream_thumbnails(conn)
   end
 
-  def serve_thumbnail(conn, %{"filename" => filename}) do
-    file_path =
-      Path.join([Application.get_env(:document_pipeline, :output_path), "thumbnail", filename])
-
-    if File.exists?(file_path) and image?(filename) do
-      content_type = MIME.from_path(filename)
+  def serve_thumbnail(conn, %{"page" => page}) do
+    with {:ok, thumbnail_file} <-
+           ThumbnailCache.get_thumbnail(
+             Path.join(Application.get_env(:document_pipeline, :output_path), page)
+           ) do
+      content_type = MIME.from_path(thumbnail_file)
 
       conn
       |> put_resp_content_type(content_type)
-      |> send_file(200, file_path)
+      |> send_file(200, thumbnail_file)
     else
-      conn
-      |> put_status(:not_found)
-      |> json(%{error: "Thumbnail not found"})
+      _error ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{error: "Thumbnail not found"})
     end
   end
 
@@ -47,30 +48,37 @@ defmodule WebWeb.ThumbnailController do
   end
 
   defp send_current_thumbnails(conn) do
-    thumbnails = list_thumbnails()
+    thumbnails =
+      list_pages() |> Enum.map(fn page -> %{name: page, url: thumbnail_url(page)} end)
+
     json = Jason.encode!(%{event: "thumbnails", data: thumbnails})
     chunk(conn, "data: #{json}\n\n")
   end
 
-  defp list_thumbnails do
-    with {:ok, files} <-
-           Application.get_env(:document_pipeline, :output_path)
-           |> Path.join("thumbnail")
-           |> File.ls() do
-      files
-      |> Enum.filter(&image?/1)
-      |> Enum.sort()
-      |> Enum.map(&%{name: &1, url: thumbnail_url(&1)})
-    else
-      {:error, _} -> []
-    end
-  end
+  def list_pages do
+    scan_files =
+      scan_dirs()
+      |> Enum.flat_map(fn dir ->
+        Enum.map(File.ls!(dir), &Path.join(dir, &1))
+      end)
 
-  defp image?(filename) do
-    String.ends_with?(filename, ~w(.jpg .jpeg .png .gif .webp))
+    scan_files
+    # Sort by filename (ignoring directory)
+    |> Enum.sort(&(Path.basename(&1) <= Path.basename(&2)))
+    |> Enum.map(
+      &Path.relative_to(
+        &1,
+        Application.get_env(:document_pipeline, :output_path)
+      )
+    )
   end
 
   defp thumbnail_url(filename) do
-    "/thumbnails/#{filename}"
+    "/thumbnail?page=#{filename}"
   end
+
+  defp scan_dirs(),
+    do:
+      Web.Config.scan_pipelines()
+      |> Enum.map(&Path.join(Application.get_env(:document_pipeline, :output_path), &1))
 end

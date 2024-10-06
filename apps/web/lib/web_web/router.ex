@@ -22,7 +22,7 @@ defmodule WebWeb.Router do
     pipe_through(:browser)
 
     get("/", PageController, :home)
-    get("/thumbnails/:filename", ThumbnailController, :serve_thumbnail)
+    get("/thumbnail", ThumbnailController, :serve_thumbnail)
   end
 
   scope "/api", WebWeb do

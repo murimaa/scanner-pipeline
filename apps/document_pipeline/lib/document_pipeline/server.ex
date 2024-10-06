@@ -114,7 +114,7 @@ defmodule DocumentPipeline.Server do
 
         state = send_progress(state, %{event: :pipeline_failed, pipeline: pipeline_name})
         cleanup_temp_files(state.execution_id)
-        {:stop, :normal, %{state | status: :failed, error: reason}}
+        {:stop, :error, %{state | status: :failed, error: reason}}
     end
   end
 
