@@ -8,7 +8,7 @@ defmodule WebWeb.PipelineController do
     Task.start(fn ->
       {:ok, _pid} =
         DocumentPipeline.DynamicSupervisor.start_child(
-          "scan",
+          "scan_adf",
           Application.get_env(:document_pipeline, :input_path)
         )
     end)
