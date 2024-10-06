@@ -1,13 +1,11 @@
 <script>
     import { onMount, onDestroy, tick } from "svelte";
-    import { documents } from "../store.js";
+    import { documents, thumbnails } from "../store.js";
     import { TRANSITION_DURATION } from "../constants.js";
     import { writable, derived } from "svelte/store";
     import DropTarget from "./DropTarget.svelte";
 
     export let dropTarget;
-    let selectedPages = [];
-    let thumbnails = [];
 
     // Create a local delayed store
     function createDelayedStore(store, delay) {
@@ -28,19 +26,22 @@
     const delayedDocuments = createDelayedStore(documents, TRANSITION_DURATION);
 
     function unselectDocument(document) {
-        const newDocuments = $documents.filter((d) => d !== document);
-        selectedPages = thumbnails.filter((t) =>
-            newDocuments
-                .flat()
-                .map((p) => p.name)
-                .includes(t.name),
-        );
-        $documents = newDocuments;
+        // comparing the name of the first page should be enough
+        $documents = $documents.filter((d) => d[0].name !== document[0].name);
     }
+
+    // Filtered and delayed documents
+    $: filteredDelayedDocuments = $delayedDocuments
+        .map((document) =>
+            document.filter((page) =>
+                $thumbnails.some((t) => t.name === page.name),
+            ),
+        )
+        .filter((document) => document.length > 0);
 </script>
 
 <div class="container">
-    {#each $delayedDocuments as document}
+    {#each filteredDelayedDocuments as document}
         {#if document.length > 0}
             <div class="document-cover">
                 <img src={document[0].url} alt={document[0].name} />

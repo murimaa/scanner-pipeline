@@ -40,13 +40,6 @@
 
                 if (response.ok) {
                     appendPipelineStatus(null, "PDF generated successfully");
-                    $thumbnails = $thumbnails.filter((page) => {
-                        const basename = page.name.substring(
-                            0,
-                            page.name.lastIndexOf("."),
-                        );
-                        return !fileList.includes(basename);
-                    });
                 } else {
                     throw new Error("Failed to generate PDF");
                 }
@@ -55,7 +48,6 @@
             } finally {
             }
         });
-        $documents = [];
     }
 </script>
 
