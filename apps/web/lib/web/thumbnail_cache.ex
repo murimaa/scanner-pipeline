@@ -104,7 +104,7 @@ defmodule ThumbnailCache do
     end
   end
 
-  defp create_thumbnail_with_retry(_image_file, attempt) do
+  defp create_thumbnail_with_retry(_image_file, _attempt) do
     Logger.error("Thumbnail creation failed after #{@max_retries} attempts")
     {:error, :max_retries_exceeded}
   end

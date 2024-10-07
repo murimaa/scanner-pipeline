@@ -4,26 +4,38 @@ defmodule WebWeb.PipelineController do
   @pubsub DocumentPipeline.PubSub
   @topic "pipeline_messages"
 
-  def scan(conn, _params) do
-    Task.start(fn ->
-      {:ok, _pid} =
-        DocumentPipeline.DynamicSupervisor.start_child(
-          "scan_adf",
-          Application.get_env(:document_pipeline, :input_path)
-        )
-    end)
-
-    conn
-    |> put_status(200)
-    |> json(%{})
+  def get_scan_config(conn, _params) do
+    scan_config = Web.Config.scan_config()
+    json(conn, scan_config)
   end
 
-  def generate_pdf(conn, %{"pages" => pages}) do
+  def scan(conn, %{"pipeline" => pipeline}) do
+    with true <- pipeline in Web.Config.scan_pipelines() do
+      Task.start(fn ->
+        {:ok, _pid} =
+          DocumentPipeline.DynamicSupervisor.start_child(
+            pipeline,
+            Path.join(Application.get_env(:document_pipeline, :input_path), pipeline)
+          )
+      end)
+
+      conn
+      |> put_status(200)
+      |> json(%{})
+    else
+      _ ->
+        conn
+        |> send_resp(:bad_request, "")
+        |> halt()
+    end
+  end
+
+  def export_document(conn, %{"pages" => pages}) do
     case validate_pages(pages) do
       {:ok, valid_pages} ->
         # All pages are valid, proceed with PDF generation
         Task.start(fn ->
-          generate_pdf_task(valid_pages)
+          export_task(valid_pages)
         end)
 
         conn
@@ -118,7 +130,7 @@ defmodule WebWeb.PipelineController do
     end
   end
 
-  defp generate_pdf_task(valid_pages) do
+  defp export_task(valid_pages) do
     unique_string = :crypto.strong_rand_bytes(16) |> Base.url_encode64() |> binary_part(0, 16)
     temp_dir = Path.join([System.tmp_dir!(), unique_string])
     File.mkdir_p!(temp_dir)

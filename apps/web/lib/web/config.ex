@@ -15,6 +15,10 @@ defmodule Web.Config do
     get_in(config, String.split(key, "."))
   end
 
+  def scan_config() do
+    get("pipelines.scan")
+  end
+
   def scan_pipelines() do
     get("pipelines.scan") |> Enum.map(&Map.get(&1, "id"))
   end

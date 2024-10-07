@@ -1,6 +1,6 @@
 pipelines:
   scan:
     - id: scan_adf
-      label: Scan ADF
-    - id: scan_plate
-      label: Scan plate
+      label: Scan (ADF Duplex)
+    - id: scan_flatbed
+      label: Scan (Flatbed)
