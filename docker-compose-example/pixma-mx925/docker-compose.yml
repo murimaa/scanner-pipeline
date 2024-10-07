@@ -33,3 +33,4 @@ services:
       - ./pipelines:/app/pipelines
       - ./input:/app/input
       - ./output:/app/output
+      - ./config.yaml:/app/config.yaml
