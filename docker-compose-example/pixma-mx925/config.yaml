@@ -2,8 +2,6 @@ pipelines:
   scan:
     - id: scan_adf
       label: Scan (ADF Duplex)
-    - id: scan_flatbed
-      label: Scan (Flatbed)
   export:
     - id: pdf
       label: Export PDF

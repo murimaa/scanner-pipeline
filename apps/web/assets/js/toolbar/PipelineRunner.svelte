@@ -12,6 +12,7 @@
     export let show = "scan";
 
     let scanConfigs = [];
+    let exportConfigs = [];
 
     onMount(async () => {
         if (show === "scan") {
@@ -25,6 +26,19 @@
                 }
             } catch (error) {
                 console.error("Error fetching scan config:", error);
+            }
+        }
+        if (show === "export") {
+            // Only fetch export config if showing export buttons
+            try {
+                const response = await fetch(API_ENDPOINTS.EXPORT_CONFIG);
+                if (response.ok) {
+                    exportConfigs = await response.json();
+                } else {
+                    console.error("Failed to fetch export config");
+                }
+            } catch (error) {
+                console.error("Error fetching export config:", error);
             }
         }
     });
@@ -54,27 +68,26 @@
         }
     }
 
-    async function generatePDF() {
-        appendPipelineStatus(null, "Generating PDF...");
+    async function startExport(pipelineId) {
+        appendPipelineStatus(null, `Starting ${pipelineId} pipeline...`);
         $documents.forEach(async (document) => {
             const fileList = document.map((page) => page.name);
             try {
-                const response = await fetch(API_ENDPOINTS.EXPORT_DOCUMENT, {
+                await fetch(API_ENDPOINTS.EXPORT_DOCUMENT, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ pages: fileList }),
+                    body: JSON.stringify({
+                        pipeline: pipelineId,
+                        pages: fileList,
+                    }),
                 });
-
-                if (response.ok) {
-                    appendPipelineStatus(null, "PDF generated successfully");
-                } else {
-                    throw new Error("Failed to generate PDF");
-                }
             } catch (error) {
-                appendPipelineStatus(null, `Error generating PDF: ${error}`);
-            } finally {
+                appendPipelineStatus(
+                    null,
+                    `Error starting ${pipelineId} pipeline: ${error}`,
+                );
             }
         });
     }
@@ -88,5 +101,10 @@
         />
     {/each}
 {:else if show === "export"}
-    <PipelineButton text="Export PDF" on:click={generatePDF} />
+    {#each exportConfigs as config}
+        <PipelineButton
+            text={config.label}
+            on:click={() => startExport(config.id)}
+        />
+    {/each}
 {/if}

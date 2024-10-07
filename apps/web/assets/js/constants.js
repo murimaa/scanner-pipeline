@@ -3,6 +3,8 @@ export const TRANSITION_DURATION = 300;
 
 export const API_ENDPOINTS = {
   SCAN_CONFIG: "/api/scan-config",
+  EXPORT_CONFIG: "/api/export-config",
+
   THUMBNAIL_STREAM: "/api/thumbnails/stream",
   STATUS_STREAM: "/api/console/status_stream",
   SCAN_PIPELINE: "/api/pipeline/scan",

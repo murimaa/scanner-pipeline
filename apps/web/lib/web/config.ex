@@ -22,4 +22,12 @@ defmodule Web.Config do
   def scan_pipelines() do
     get("pipelines.scan") |> Enum.map(&Map.get(&1, "id"))
   end
+
+  def export_config() do
+    get("pipelines.export")
+  end
+
+  def export_pipelines() do
+    get("pipelines.export") |> Enum.map(&Map.get(&1, "id"))
+  end
 end

@@ -28,6 +28,8 @@ defmodule WebWeb.Router do
   scope "/api", WebWeb do
     pipe_through(:api)
     get("/scan-config", PipelineController, :get_scan_config)
+    get("/export-config", PipelineController, :get_export_config)
+
     post("/pipeline/scan", PipelineController, :scan)
     post("/pipeline/export", PipelineController, :export_document)
     delete("/page", PipelineController, :delete_page)

@@ -9,6 +9,11 @@ defmodule WebWeb.PipelineController do
     json(conn, scan_config)
   end
 
+  def get_export_config(conn, _params) do
+    scan_config = Web.Config.export_config()
+    json(conn, scan_config)
+  end
+
   def scan(conn, %{"pipeline" => pipeline}) do
     with true <- pipeline in Web.Config.scan_pipelines() do
       Task.start(fn ->
@@ -30,23 +35,25 @@ defmodule WebWeb.PipelineController do
     end
   end
 
-  def export_document(conn, %{"pages" => pages}) do
-    case validate_pages(pages) do
-      {:ok, valid_pages} ->
-        # All pages are valid, proceed with PDF generation
-        Task.start(fn ->
-          export_task(valid_pages)
-        end)
+  def export_document(conn, %{"pipeline" => pipeline, "pages" => pages}) do
+    with true <- pipeline in Web.Config.export_pipelines() do
+      case validate_pages(pages) do
+        {:ok, valid_pages} ->
+          # All pages are valid, proceed with PDF generation
+          Task.start(fn ->
+            export_task(pipeline, valid_pages)
+          end)
 
-        conn
-        |> put_status(200)
-        |> json(%{message: "PDF generation started"})
+          conn
+          |> put_status(200)
+          |> json(%{message: "PDF generation started"})
 
-      {:error, reason} ->
-        conn
-        |> put_status(:bad_request)
-        |> json(%{error: reason})
-        |> halt()
+        {:error, reason} ->
+          conn
+          |> put_status(:bad_request)
+          |> json(%{error: reason})
+          |> halt()
+      end
     end
   end
 
@@ -74,10 +81,10 @@ defmodule WebWeb.PipelineController do
 
   defp wait_for_pipeline_to_finish(execution_id) do
     receive do
-      {:pipeline_message, execution_id, %{event: :pipeline_failed, pipeline: _}} ->
+      {:pipeline_message, ^execution_id, %{event: :pipeline_failed, pipeline: _}} ->
         :error
 
-      {:pipeline_message, execution_id, %{event: :pipeline_finished, pipeline: _}} ->
+      {:pipeline_message, ^execution_id, %{event: :pipeline_finished, pipeline: _}} ->
         :ok
 
       _ ->
@@ -130,7 +137,7 @@ defmodule WebWeb.PipelineController do
     end
   end
 
-  defp export_task(valid_pages) do
+  defp export_task(pipeline, valid_pages) do
     unique_string = :crypto.strong_rand_bytes(16) |> Base.url_encode64() |> binary_part(0, 16)
     temp_dir = Path.join([System.tmp_dir!(), unique_string])
     File.mkdir_p!(temp_dir)
@@ -140,7 +147,7 @@ defmodule WebWeb.PipelineController do
       File.cp!(source_path, dest_path)
     end)
 
-    {:ok, pid} = DocumentPipeline.DynamicSupervisor.start_child("pdf", temp_dir)
+    {:ok, pid} = DocumentPipeline.DynamicSupervisor.start_child(pipeline, temp_dir)
     execution_id = DocumentPipeline.Server.get_execution_id(pid)
     Phoenix.PubSub.subscribe(@pubsub, "#{@topic}:#{execution_id}")
 
