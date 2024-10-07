@@ -5,27 +5,21 @@ defmodule Web.Application do
 
   use Application
 
-  defp scan_originals_path,
-    do:
-      Path.join([
-        Application.get_env(:document_pipeline, :output_path),
-        "scan"
-      ])
-
   @impl true
   def start(_type, _args) do
-    children = [
-      WebWeb.Telemetry,
-      {DNSCluster, query: Application.get_env(:web, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Web.PubSub},
-      # Start the Finch HTTP client for sending emails
-      # {Finch, name: Web.Finch},
-      {DocumentPipeline.FileWatcher, {scan_originals_path(), "thumbnail"}},
-      # Start a worker by calling: Web.Worker.start_link(arg)
-      # {Web.Worker, arg},
-      # Start to serve requests, typically the last entry
-      WebWeb.Endpoint
-    ]
+    children =
+      [
+        WebWeb.Telemetry,
+        {DNSCluster, query: Application.get_env(:web, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: Web.PubSub},
+        # Start the Finch HTTP client for sending emails
+        # {Finch, name: Web.Finch},
+        # Start a worker by calling: Web.Worker.start_link(arg)
+        # {Web.Worker, arg},
+        # Start to serve requests, typically the last entry
+        ThumbnailCache,
+        WebWeb.Endpoint
+      ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

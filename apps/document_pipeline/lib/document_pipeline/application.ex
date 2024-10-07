@@ -5,6 +5,7 @@ defmodule DocumentPipeline.Application do
   def start(_type, _args) do
     children = [
       {Registry, keys: :unique, name: DocumentPipeline.PipelineRegistry},
+      {Registry, keys: :unique, name: DocumentPipeline.FileWatcherRegistry},
       {Phoenix.PubSub, name: DocumentPipeline.PubSub},
       DocumentPipeline.DynamicSupervisor
     ]

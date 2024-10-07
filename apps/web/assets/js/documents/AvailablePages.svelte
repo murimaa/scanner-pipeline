@@ -13,7 +13,6 @@
     export let dropTarget;
 
     let eventSourceManager;
-    // let selectedPages = [];
     onMount(() => {
         eventSourceManager = createEventSourceManager(
             API_ENDPOINTS.THUMBNAIL_STREAM,
@@ -41,7 +40,17 @@
 
     function handleThumbnailUpdate(data) {
         if (data.event === "thumbnails") {
-            $thumbnails = data.data;
+            const newThumbnails = data.data;
+            $thumbnails = newThumbnails;
+
+            // Update $documents to remove pages that no longer exist in thumbnails
+            $documents = $documents
+                .map((document) =>
+                    document.filter((page) =>
+                        newThumbnails.some((t) => t.name === page.name),
+                    ),
+                )
+                .filter((document) => document.length > 0);
         }
     }
 
@@ -52,7 +61,7 @@
     async function deleteThumbnail(filename) {
         try {
             const response = await fetch(
-                `${API_ENDPOINTS.DELETE_PAGE}/${stripExtension(filename)}`,
+                `${API_ENDPOINTS.DELETE_PAGE}?page=${filename}`,
                 {
                     method: "DELETE",
                 },

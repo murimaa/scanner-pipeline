@@ -22,14 +22,17 @@ defmodule WebWeb.Router do
     pipe_through(:browser)
 
     get("/", PageController, :home)
-    get("/thumbnails/:filename", ThumbnailController, :serve_thumbnail)
+    get("/thumbnail", ThumbnailController, :serve_thumbnail)
   end
 
   scope "/api", WebWeb do
     pipe_through(:api)
+    get("/scan-config", PipelineController, :get_scan_config)
+    get("/export-config", PipelineController, :get_export_config)
+
     post("/pipeline/scan", PipelineController, :scan)
-    post("/pipeline/generate-pdf", PipelineController, :generate_pdf)
-    delete("/pages/:filename", PipelineController, :delete_page)
+    post("/pipeline/export", PipelineController, :export_document)
+    delete("/page", PipelineController, :delete_page)
   end
 
   scope "/api", WebWeb do

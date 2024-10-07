@@ -25,7 +25,8 @@ if config_env() == :prod do
     pipeline_path: System.get_env("PIPELINE_PATH") || "/app/pipelines",
     input_path: System.get_env("INPUT_PATH") || "/app/input",
     output_path: System.get_env("OUTPUT_PATH") || "/app/output",
-    tmp_path: System.get_env("TMP_PATH") || "/app/tmp"
+    tmp_path: System.get_env("TMP_PATH") || "/app/tmp",
+    yaml_config: System.get_env("YAML_CONFIG_PATH") || "/app/config.yaml"
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you

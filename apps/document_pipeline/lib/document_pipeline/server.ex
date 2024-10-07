@@ -61,8 +61,16 @@ defmodule DocumentPipeline.Server do
 
   def handle_continue(:run_pipeline, state) do
     scripts_with_args = get_scripts(state)
-    send(self(), {:run_next_script, scripts_with_args})
-    {:noreply, %{state | status: :running, current_script: nil}}
+
+    case scripts_with_args do
+      [] ->
+        state = send_progress(state, %{event: :pipeline_failed, pipeline: state.pipeline_name})
+        {:stop, :error, %{state | status: :failed, error: "No scripts in pipeline"}}
+
+      _ ->
+        send(self(), {:run_next_script, scripts_with_args})
+        {:noreply, %{state | status: :running, current_script: nil}}
+    end
   end
 
   def handle_info({:run_next_script, []}, state) do
@@ -114,7 +122,7 @@ defmodule DocumentPipeline.Server do
 
         state = send_progress(state, %{event: :pipeline_failed, pipeline: pipeline_name})
         cleanup_temp_files(state.execution_id)
-        {:stop, :normal, %{state | status: :failed, error: reason}}
+        {:stop, :error, %{state | status: :failed, error: reason}}
     end
   end
 

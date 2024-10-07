@@ -1,0 +1,7 @@
+pipelines:
+  scan:
+    - id: scan_adf
+      label: Scan (ADF Duplex)
+  export:
+    - id: pdf
+      label: Export PDF

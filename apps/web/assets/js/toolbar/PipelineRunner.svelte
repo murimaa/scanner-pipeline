@@ -9,57 +9,102 @@
     import PipelineButton from "./PipelineButton.svelte";
     import { API_ENDPOINTS } from "../constants.js";
 
+    export let show = "scan";
+
+    let scanConfigs = [];
+    let exportConfigs = [];
+
+    onMount(async () => {
+        if (show === "scan") {
+            // Only fetch scan config if showing scan buttons
+            try {
+                const response = await fetch(API_ENDPOINTS.SCAN_CONFIG);
+                if (response.ok) {
+                    scanConfigs = await response.json();
+                } else {
+                    console.error("Failed to fetch scan config");
+                }
+            } catch (error) {
+                console.error("Error fetching scan config:", error);
+            }
+        }
+        if (show === "export") {
+            // Only fetch export config if showing export buttons
+            try {
+                const response = await fetch(API_ENDPOINTS.EXPORT_CONFIG);
+                if (response.ok) {
+                    exportConfigs = await response.json();
+                } else {
+                    console.error("Failed to fetch export config");
+                }
+            } catch (error) {
+                console.error("Error fetching export config:", error);
+            }
+        }
+    });
+
     function appendPipelineStatus(executionId, message) {
         $pipelineStatus = [...$pipelineStatus, { message }];
     }
 
-    async function startScan() {
+    async function startScan(pipelineId) {
         $isRunning = true;
-        appendPipelineStatus(null, "Starting pipeline...");
+        appendPipelineStatus(null, `Starting ${pipelineId} pipeline...`);
 
         try {
-            await fetch(API_ENDPOINTS.SCAN_PIPELINE, { method: "POST" });
+            await fetch(API_ENDPOINTS.SCAN_PIPELINE, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ pipeline: pipelineId }),
+            });
         } catch (error) {
-            appendPipelineStatus(null, `Error starting pipeline: ${error}`);
+            appendPipelineStatus(
+                null,
+                `Error starting ${pipelineId} pipeline: ${error}`,
+            );
             $isRunning = false;
         }
     }
 
-    async function generatePDF() {
-        appendPipelineStatus(null, "Generating PDF...");
+    async function startExport(pipelineId) {
+        appendPipelineStatus(null, `Starting ${pipelineId} pipeline...`);
         $documents.forEach(async (document) => {
-            const fileList = document.map((page) =>
-                page.name.substring(0, page.name.lastIndexOf(".")),
-            );
+            const fileList = document.map((page) => page.name);
             try {
-                const response = await fetch(API_ENDPOINTS.GENERATE_PDF, {
+                await fetch(API_ENDPOINTS.EXPORT_DOCUMENT, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ files: fileList }),
+                    body: JSON.stringify({
+                        pipeline: pipelineId,
+                        pages: fileList,
+                    }),
                 });
-
-                if (response.ok) {
-                    appendPipelineStatus(null, "PDF generated successfully");
-                    $thumbnails = $thumbnails.filter((page) => {
-                        const basename = page.name.substring(
-                            0,
-                            page.name.lastIndexOf("."),
-                        );
-                        return !fileList.includes(basename);
-                    });
-                } else {
-                    throw new Error("Failed to generate PDF");
-                }
             } catch (error) {
-                appendPipelineStatus(null, `Error generating PDF: ${error}`);
-            } finally {
+                appendPipelineStatus(
+                    null,
+                    `Error starting ${pipelineId} pipeline: ${error}`,
+                );
             }
         });
-        $documents = [];
     }
 </script>
 
-<PipelineButton text="Scan" on:click={startScan} />
-<PipelineButton text="PDF" on:click={generatePDF} />
+{#if show === "scan"}
+    {#each scanConfigs as config}
+        <PipelineButton
+            text={config.label}
+            on:click={() => startScan(config.id)}
+        />
+    {/each}
+{:else if show === "export"}
+    {#each exportConfigs as config}
+        <PipelineButton
+            text={config.label}
+            on:click={() => startExport(config.id)}
+        />
+    {/each}
+{/if}

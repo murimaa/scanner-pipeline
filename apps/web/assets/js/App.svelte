@@ -40,11 +40,14 @@
 
 <main bind:this={main}>
     <div class="buttons-wrapper">
-        <PipelineRunner />
+        <PipelineRunner show="scan" />
     </div>
     <div class="documents">
         <div class="container selected">
             <h2>Documents</h2>
+            <div class="buttons-wrapper">
+                <PipelineRunner show="export" />
+            </div>
             <SelectedPages bind:dropTarget={dropTargetElement} />
         </div>
         <div class="container available">
@@ -88,6 +91,9 @@
     }
     .buttons-wrapper {
         margin: 1rem 0;
+        display: flex;
+        column-gap: 5px;
+        justify-content: center;
     }
     .console-wrapper {
         position: fixed;

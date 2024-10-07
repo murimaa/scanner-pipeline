@@ -60,7 +60,8 @@ defmodule Web.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:document_pipeline, in_umbrella: true},
-      {:mime, "~> 2.0"}
+      {:mime, "~> 2.0"},
+      {:yaml_elixir, "~> 2.9"}
     ]
   end
 
