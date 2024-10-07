@@ -59,7 +59,11 @@ defmodule WebWeb.ThumbnailController do
     scan_files =
       scan_dirs()
       |> Enum.flat_map(fn dir ->
-        Enum.map(File.ls!(dir), &Path.join(dir, &1))
+        with {:ok, files} <- File.ls(dir) do
+          Enum.map(files, &Path.join(dir, &1))
+        else
+          _ -> []
+        end
       end)
 
     scan_files

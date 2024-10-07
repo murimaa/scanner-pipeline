@@ -115,14 +115,16 @@ defmodule ThumbnailCache do
     thumbnail_path =
       Path.join([Application.get_env(:document_pipeline, :output_path), @thumbnail_pipeline])
 
-    thumbnail_filename =
-      thumbnail_path
-      |> File.ls!()
-      |> Enum.find(fn thumbnail_file ->
-        Path.basename(thumbnail_file, Path.extname(thumbnail_file)) == basename
-      end)
-
-    if thumbnail_filename != nil, do: Path.join(thumbnail_path, thumbnail_filename), else: nil
+    with {:ok, thumbnails} <- File.ls(thumbnail_path),
+         thumbnail_filename <-
+           Enum.find(thumbnails, fn thumbnail_file ->
+             Path.basename(thumbnail_file, Path.extname(thumbnail_file)) == basename
+           end),
+         true <- thumbnail_filename != nil do
+      Path.join(thumbnail_path, thumbnail_filename)
+    else
+      _ -> nil
+    end
   end
 
   defp delete_file(path) do
