@@ -74,11 +74,13 @@ defmodule ThumbnailCache do
         receive do
           {:DOWN, ^monitor_ref, :process, ^pid, :normal} ->
             thumbnail = find_matching_thumbnail(img_tmp_file)
+            File.rm(img_tmp_file)
 
             if thumbnail != nil do
               {:ok, thumbnail}
             else
               Logger.warn("Thumbnail not created on attempt #{attempt}. Retrying...")
+              Process.sleep(500)
               create_thumbnail_with_retry(image_file, attempt + 1)
             end
 
@@ -87,11 +89,14 @@ defmodule ThumbnailCache do
               "Thumbnail creation failed on attempt #{attempt} with reason: #{inspect(reason)}. Retrying..."
             )
 
+            Process.sleep(500)
+            File.rm(img_tmp_file)
             create_thumbnail_with_retry(image_file, attempt + 1)
         after
           @timeout ->
             Process.exit(pid, :kill)
             Logger.warn("Thumbnail creation timed out on attempt #{attempt}. Retrying...")
+            File.rm(img_tmp_file)
             create_thumbnail_with_retry(image_file, attempt + 1)
         end
 
@@ -100,6 +105,7 @@ defmodule ThumbnailCache do
           "Failed to start thumbnail pipeline on attempt #{attempt}: #{inspect(reason)}"
         )
 
+        File.rm(img_tmp_file)
         create_thumbnail_with_retry(image_file, attempt + 1)
     end
   end
