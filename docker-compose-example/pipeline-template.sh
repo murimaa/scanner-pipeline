@@ -1,33 +1,12 @@
 #!/bin/bash
 
 # Configuration
-NEW_EXTENSION=""  # Leave empty to keep original extension
-FAIL_ON_ERROR=true  # Exit on first error
-PROCESS_COMMAND='add_timestamp_and_number "$input" "$output"'
+NEW_EXTENSION="webp"  # Leave empty to keep original extension, or set to change (e.g., "webp")
+FAIL_ON_ERROR=true  # Set to false to continue processing even if individual files fail
+PROCESS_COMMAND='convert "$input" "$output"'  # Command to process each file
 
-# Function to add timestamp and page number
-add_timestamp_and_number() {
-    local input=$1
-    local output=$2
-    local basename=$(basename "$input")
-    local extension="${basename##*.}"
-    local name="${basename%.*}"
-
-    # Increment the counter variable
-    page_number=$((page_number+1))
-
-    # Create new filename with timestamp, running number, and original name
-    local new_filename="${timestamp}-$(printf "%04d" $page_number)-${name}.${extension}"
-    cp "$input" "${output%/*}/$new_filename"
-
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to copy file $input" >&2
-        return 1
-    fi
-
-    echo "Processed: $input -> $new_filename"
-    return 0
-}
+# Check for required tools
+# command -v REQUIRED_TOOL >/dev/null 2>&1 || { echo >&2 "Error: REQUIRED_TOOL is not installed."; exit 1; }
 
 # Function to determine output filename
 get_output_filename() {
@@ -42,15 +21,12 @@ get_output_filename() {
     fi
 }
 
-# Global variables
-timestamp=$(date +"%Y%m%d-%H%M%S")
-page_number=0
-
 # Function to process a single file
 process_file() {
     local input=$1
     local output=$(get_output_filename "$input" "$output_dir")
 
+    # Process the file using the configured command
     eval $PROCESS_COMMAND
     local command_status=$?
 
@@ -59,17 +35,13 @@ process_file() {
         return 1
     fi
 
+    echo "Processed: $input -> $output"
     return 0
 }
 
-# Main script
-input=$1
-output_dir=$(pwd)
-
-echo "Adding timestamp and running page number to file names..."
-
-if [[ -d "$input" ]]; then
-    while IFS= read -r file; do
+process_directory() {
+    local dir=$1
+    for file in "$dir"/*; do
         if [[ -f "$file" ]]; then
             process_file "$file"
             if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
@@ -77,7 +49,17 @@ if [[ -d "$input" ]]; then
                 exit 1
             fi
         fi
-    done < <(find "$input" -type f | sort)
+    done
+}
+
+# Main script
+input=$1
+output_dir=$(pwd)
+
+echo "Processing files..."
+
+if [[ -d "$input" ]]; then
+    process_directory "$input"
 elif [[ -f "$input" ]]; then
     process_file "$input"
     if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
