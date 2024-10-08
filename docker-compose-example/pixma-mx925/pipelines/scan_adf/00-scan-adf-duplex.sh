@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 scanadf --device-name=pixma --source "ADF Duplex" --mode Gray --resolution 300dpi -o %04d.pnm
 # Capture the exit status of scanimage
 scan_status=$?
