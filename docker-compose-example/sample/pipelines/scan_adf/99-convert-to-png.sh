@@ -1,32 +1,74 @@
 #!/bin/bash
 
-# Check if the required tools are installed
-command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
+# Configuration
+NEW_EXTENSION="png"  # Leave empty to keep original extension, or set to change (e.g., "webp")
+FAIL_ON_ERROR=true  # Set to false to continue processing even if individual files fail
+PROCESS_COMMAND='convert "$input" "$output"'  # Command to process each file
 
-# Save the first argument as the input directory
-INPUT_DIR=$1
+# Check for required tools
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: Imagemagick is not installed."; exit 1; }
 
-# Set output directory to current directory
-OUTPUT_DIR="."
+# Function to determine output filename
+get_output_filename() {
+    local input=$1
+    local output_dir=$2
+    local filename=$(basename "$input")
 
-echo "Converting files to PNG..."
+    if [ -n "$NEW_EXTENSION" ]; then
+        echo "${output_dir}/${filename%.*}.${NEW_EXTENSION}"
+    else
+        echo "${output_dir}/${filename}"
+    fi
+}
 
-# Iterate over the files in the input directory
-for INPUT in "$INPUT_DIR"/*
-do
-  # Check if it's a file
-  if [[ -f "$INPUT" ]]; then
-    ORIGINAL=$INPUT
+# Function to process a single file
+process_file() {
+    local input=$1
+    local output=$(get_output_filename "$input" "$output_dir")
 
-    BASENAME="${ORIGINAL##*/}"
-    ORIGINAL_NAME="${BASENAME%.*}"
+    # Process the file using the configured command
+    eval $PROCESS_COMMAND
+    local command_status=$?
 
-    #OUTPUT_FILENAME="$OUTPUT_DIR/${ORIGINAL_NAME}.webp"
-    #convert "$INPUT" -define webp:lossless=true "$OUTPUT_FILENAME"
+    if [ $command_status -ne 0 ]; then
+        echo "Error processing file: $input" >&2
+        return 1
+    fi
 
-    OUTPUT_FILENAME="$OUTPUT_DIR/${ORIGINAL_NAME}.png"
-    convert "$INPUT" "$OUTPUT_FILENAME"
+    echo "Processed: $input -> $output"
+    return 0
+}
 
-    echo "Converted: $INPUT -> $OUTPUT_FILENAME"
-  fi
-done
+process_directory() {
+    local dir=$1
+    for file in "$dir"/*; do
+        if [[ -f "$file" ]]; then
+            process_file "$file"
+            if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
+                echo "Exiting due to error in processing $file" >&2
+                exit 1
+            fi
+        fi
+    done
+}
+
+# Main script
+input=$1
+output_dir=$(pwd)
+
+echo "Processing files..."
+
+if [[ -d "$input" ]]; then
+    process_directory "$input"
+elif [[ -f "$input" ]]; then
+    process_file "$input"
+    if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
+        echo "Exiting due to error in processing $input" >&2
+        exit 1
+    fi
+else
+    echo "Error: Input is neither a valid file nor a directory." >&2
+    exit 1
+fi
+
+echo "Processing complete. Output files are in: $output_dir"

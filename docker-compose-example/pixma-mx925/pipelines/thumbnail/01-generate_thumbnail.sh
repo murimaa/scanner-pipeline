@@ -1,38 +1,70 @@
 #!/bin/bash
 
-# Check if the required tools are installed
+# Configuration
+NEW_EXTENSION="webp"  # Set output extension to webp
+FAIL_ON_ERROR=true  # Exit on first error
+PROCESS_COMMAND='convert "$input" -strip -resize "1000x1000>" -quality 80 -define webp:lossless=false -define webp:method=6 "$output"'
+
+# Check for required tools
 command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
+
+# Function to determine output filename
+get_output_filename() {
+    local input=$1
+    local output_dir=$2
+    local filename=$(basename "$input")
+
+    if [ -n "$NEW_EXTENSION" ]; then
+        echo "${output_dir}/${filename%.*}.${NEW_EXTENSION}"
+    else
+        echo "${output_dir}/${filename}"
+    fi
+}
 
 # Function to process a single file
 process_file() {
-    local INPUT=$1
-    local OUTPUT_DIR=$2
-    local OUTPUT_FILE="${OUTPUT_DIR}/$(basename "${INPUT%.*}").webp"
-    convert "${INPUT}" -strip -resize '1000x1000>' -quality 80 -define webp:lossless=false -define webp:method=6 "${OUTPUT_FILE}"
-    echo "Generated thumbnail: $INPUT -> $OUTPUT_FILE"
+    local input=$1
+    local output=$(get_output_filename "$input" "$output_dir")
+
+    echo "Generating thumbnail: $input -> $output"
+
+    # Process the file using the configured command
+    eval $PROCESS_COMMAND
+    local command_status=$?
+
+    if [ $command_status -ne 0 ]; then
+        echo "Error: Convert failed for file: $input" >&2
+        return 1
+    fi
+
+    return 0
 }
 
-# Save the first argument as the input
-INPUT=$1
-
-# Set output directory to current directory
-OUTPUT_DIR="."
+# Main script
+input=$1
+output_dir=$(pwd)
 
 echo "Generating thumbnails..."
 
-# Check if input is a directory or a file
-if [[ -d "$INPUT" ]]; then
-    # If it's a directory, iterate over the files
-    for FILE in "$INPUT"/*
-    do
-        if [[ -f "$FILE" ]]; then
-            process_file "$FILE" "$OUTPUT_DIR"
+if [[ -d "$input" ]]; then
+    for file in "$input"/*; do
+        if [[ -f "$file" ]]; then
+            process_file "$file"
+            if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
+                echo "Exiting due to error in processing $file" >&2
+                exit 1
+            fi
         fi
     done
-elif [[ -f "$INPUT" ]]; then
-    # If it's a file, process it directly
-    process_file "$INPUT" "$OUTPUT_DIR"
+elif [[ -f "$input" ]]; then
+    process_file "$input"
+    if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
+        echo "Exiting due to error in processing $input" >&2
+        exit 1
+    fi
 else
-    echo "Error: Input is neither a valid file nor a directory."
+    echo "Error: Input is neither a valid file nor a directory." >&2
     exit 1
 fi
+
+echo "Thumbnail generation complete. Output files are in: $output_dir"

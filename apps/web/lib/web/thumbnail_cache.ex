@@ -4,7 +4,9 @@ defmodule ThumbnailCache do
 
   @thumbnail_pipeline "thumbnail"
   @table_name :thumbnail_cache
-  @max_retries 3
+  @max_retries 4
+  @initial_delay 250
+  @max_delay 10_000
   @timeout 30_000
 
   def start_link(_opts) do
@@ -57,6 +59,11 @@ defmodule ThumbnailCache do
     create_thumbnail_with_retry(image_file, 1)
   end
 
+  defp exponential_delay(attempt) do
+    delay = @initial_delay * :math.pow(2, attempt - 1)
+    min(trunc(delay), @max_delay)
+  end
+
   defp create_thumbnail_with_retry(image_file, attempt) when attempt <= @max_retries do
     temp_dir = System.tmp_dir!()
 
@@ -66,46 +73,44 @@ defmodule ThumbnailCache do
     img_tmp_file = Path.join(temp_dir, "#{random_file_basename}#{Path.extname(image_file)}")
     File.cp!(image_file, img_tmp_file)
 
-    case DocumentPipeline.DynamicSupervisor.start_child(@thumbnail_pipeline, img_tmp_file) do
-      {:ok, pid} ->
-        _execution_id = DocumentPipeline.Server.get_execution_id(pid)
-        monitor_ref = Process.monitor(pid)
+    result =
+      case DocumentPipeline.DynamicSupervisor.start_child(@thumbnail_pipeline, img_tmp_file) do
+        {:ok, pid} ->
+          _execution_id = DocumentPipeline.Server.get_execution_id(pid)
+          monitor_ref = Process.monitor(pid)
 
-        receive do
-          {:DOWN, ^monitor_ref, :process, ^pid, :normal} ->
-            thumbnail = find_matching_thumbnail(img_tmp_file)
-            File.rm(img_tmp_file)
+          receive do
+            {:DOWN, ^monitor_ref, :process, ^pid, :normal} ->
+              thumbnail = find_matching_thumbnail(img_tmp_file)
 
-            if thumbnail != nil do
-              {:ok, thumbnail}
-            else
-              Logger.warn("Thumbnail not created on attempt #{attempt}. Retrying...")
-              Process.sleep(500)
-              create_thumbnail_with_retry(image_file, attempt + 1)
-            end
+              if thumbnail != nil do
+                {:ok, thumbnail}
+              else
+                {:error, :not_found}
+              end
 
-          {:DOWN, ^monitor_ref, :process, ^pid, reason} ->
-            Logger.warn(
-              "Thumbnail creation failed on attempt #{attempt} with reason: #{inspect(reason)}. Retrying..."
-            )
+            {:DOWN, ^monitor_ref, :process, ^pid, reason} ->
+              {:error, {:pipeline_failed, reason}}
+          after
+            @timeout ->
+              Process.exit(pid, :kill)
+              {:error, :timeout}
+          end
 
-            Process.sleep(500)
-            File.rm(img_tmp_file)
-            create_thumbnail_with_retry(image_file, attempt + 1)
-        after
-          @timeout ->
-            Process.exit(pid, :kill)
-            Logger.warn("Thumbnail creation timed out on attempt #{attempt}. Retrying...")
-            File.rm(img_tmp_file)
-            create_thumbnail_with_retry(image_file, attempt + 1)
-        end
+        {:error, reason} ->
+          {:error, reason}
+      end
+
+    File.rm(img_tmp_file)
+
+    case result do
+      {:ok, thumbnail} ->
+        {:ok, thumbnail}
 
       {:error, reason} ->
-        Logger.error(
-          "Failed to start thumbnail pipeline on attempt #{attempt}: #{inspect(reason)}"
-        )
-
-        File.rm(img_tmp_file)
+        Logger.warning("Thumbnail failed on attempt #{attempt}. Reason: #{inspect(reason)}")
+        delay = exponential_delay(attempt)
+        Process.sleep(delay)
         create_thumbnail_with_retry(image_file, attempt + 1)
     end
   end

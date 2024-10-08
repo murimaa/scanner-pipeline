@@ -1,72 +1,86 @@
 #!/bin/bash
-# Check if the required tools are installed
+
+# Configuration
+OUTPUT_DIR="."
+FAIL_ON_ERROR=true
+IMAGE_EXTENSIONS=("tiff" "png" "webp" "jpg" "jpeg")
+
+# Check for required tools
 command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
-# Check if a directory argument is provided
-if [ $# -eq 0 ]; then
-    echo "Please provide a directory path as an argument."
-    exit 1
-fi
+# Function to generate output filename
+get_output_filename() {
+    local date=$(date +%F)
+    local rand=$(echo $RANDOM$RANDOM | md5sum | cut -c 1-8)
+    echo "${OUTPUT_DIR}/${date}-${rand}.pdf"
+}
 
-# Save the argument as the input directory
-INPUT_DIR="$1"
+# Function to filter image files
+filter_image_files() {
+    local input_dir=$1
+    local image_pages=()
 
-# Check if the provided path is a directory
-if [ ! -d "$INPUT_DIR" ]; then
-    echo "Error: $INPUT_DIR is not a valid directory."
-    exit 1
-fi
-
-# Get the current date in the format YYYY-MM-DD
-date=$(date +%F)
-
-# Generate a random string of 8 characters
-rand=$(echo $RANDOM$RANDOM | md5sum | cut -c 1-8)
-
-# Combine the date and random string to create a unique filename in the current directory
-OUTPUT_FILE="./${date}-${rand}.pdf"
-
-# Set the extensions you want to filter by in an array
-image_extensions=("tiff" "png" "webp" "jpg" "jpeg")
-
-# Initialize an empty array to store the filtered list of files
-IMAGE_PAGES=()
-
-# Iterate through the files in the input directory
-for file in "$INPUT_DIR"/*; do
-    # Get the base name of the file (i.e., the file name without the directory path)
-    base_name=$(basename "$file")
-    # Get the extension of the file
-    file_extension="${base_name##*.}"
-    # Convert the file extension to lowercase
-    file_extension=$(echo "$file_extension" | tr '[:upper:]' '[:lower:]')
-
-    # Check if we have an image
-    for extension in "${image_extensions[@]}"; do
-        # Convert the extension to lowercase
-        extension=$(echo "$extension" | tr '[:upper:]' '[:lower:]')
-        # Check if the extension of the file matches one of the extensions we want to filter by
-        if [ "$file_extension" = "$extension" ]; then
-            # If the extensions match, add the file to the filtered list
-            IMAGE_PAGES+=("$file")
-            # Break out of the inner loop
-            break
-        fi
+    for file in "$input_dir"/*; do
+        local file_extension=$(echo "${file##*.}" | tr '[:upper:]' '[:lower:]')
+        for extension in "${IMAGE_EXTENSIONS[@]}"; do
+            if [ "$file_extension" = "$extension" ]; then
+                image_pages+=("$file")
+                break
+            fi
+        done
     done
-done
 
-# Check if we found any images
-if [ ${#IMAGE_PAGES[@]} -eq 0 ]; then
-    echo "No image files found in the specified directory."
+    if [ ${#image_pages[@]} -eq 0 ]; then
+        echo "No image files found in the specified directory." >&2
+        return 1
+    fi
+
+    echo "${image_pages[@]}"
+}
+
+# Function to create PDF
+create_pdf() {
+    local output_file=$1
+    shift
+    local image_pages=("$@")
+
+    echo "Making pdf $output_file"
+    convert "${image_pages[@]}" -density 72 -page a4 pdf:"$output_file"
+    local convert_status=$?
+
+    if [ $convert_status -ne 0 ]; then
+        echo "Error: PDF creation failed with status $convert_status" >&2
+        return 1
+    fi
+
+    echo "PDF created successfully: $output_file"
+    return 0
+}
+
+# Main script
+if [ $# -eq 0 ]; then
+    echo "Please provide a directory path as an argument." >&2
     exit 1
 fi
 
-echo "Making pdf $OUTPUT_FILE"
-convert "${IMAGE_PAGES[@]}" -density 72 -page a4 pdf:"$OUTPUT_FILE"
-retval=$?
-if [ $retval -ne 0 ]; then
-    echo "Non-zero return value: $retval - exiting."
-    exit $retval
+input_dir="$1"
+
+if [ ! -d "$input_dir" ]; then
+    echo "Error: $input_dir is not a valid directory." >&2
+    exit 1
 fi
 
-echo "PDF created successfully: $OUTPUT_FILE"
+output_file=$(get_output_filename)
+image_pages=$(filter_image_files "$input_dir")
+
+if [ $? -ne 0 ]; then
+    [ "$FAIL_ON_ERROR" = true ] && exit 1
+fi
+
+create_pdf "$output_file" $image_pages
+
+if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
+    exit 1
+fi
+
+exit 0

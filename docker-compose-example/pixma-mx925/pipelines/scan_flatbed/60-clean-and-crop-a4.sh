@@ -1,33 +1,22 @@
 #!/bin/bash
 
 # Configuration
-NEW_EXTENSION=""  # Leave empty to keep original extension
+NEW_EXTENSION=""  # Keep original extension
 FAIL_ON_ERROR=true  # Exit on first error
-PROCESS_COMMAND='add_timestamp_and_number "$input" "$output"'
 
-# Function to add timestamp and page number
-add_timestamp_and_number() {
-    local input=$1
-    local output=$2
-    local basename=$(basename "$input")
-    local extension="${basename##*.}"
-    local name="${basename%.*}"
+PROCESS_COMMAND='convert "$input" \
+ -deskew 40% \
+ -gravity center \
+ -crop 2480x3508+0+0 \
+ -level 10%,90%,1.0 \
+ -sharpen 0x1 \
+ -despeckle \
+ -enhance \
+ -trim +repage \
+ "$output"'
 
-    # Increment the counter variable
-    page_number=$((page_number+1))
-
-    # Create new filename with timestamp, running number, and original name
-    local new_filename="${timestamp}-$(printf "%04d" $page_number)-${name}.${extension}"
-    cp "$input" "${output%/*}/$new_filename"
-
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to copy file $input" >&2
-        return 1
-    fi
-
-    echo "Processed: $input -> $new_filename"
-    return 0
-}
+# Check for required tools
+command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
 
 # Function to determine output filename
 get_output_filename() {
@@ -42,15 +31,14 @@ get_output_filename() {
     fi
 }
 
-# Global variables
-timestamp=$(date +"%Y%m%d-%H%M%S")
-page_number=0
-
 # Function to process a single file
 process_file() {
     local input=$1
     local output=$(get_output_filename "$input" "$output_dir")
 
+    echo "  -> $input"
+
+    # Process the file using the configured command
     eval $PROCESS_COMMAND
     local command_status=$?
 
@@ -59,6 +47,7 @@ process_file() {
         return 1
     fi
 
+    echo "Processed: $input -> $output"
     return 0
 }
 
@@ -66,10 +55,10 @@ process_file() {
 input=$1
 output_dir=$(pwd)
 
-echo "Adding timestamp and running page number to file names..."
+echo "Processing files..."
 
 if [[ -d "$input" ]]; then
-    while IFS= read -r file; do
+    for file in "$input"/*; do
         if [[ -f "$file" ]]; then
             process_file "$file"
             if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
@@ -77,7 +66,7 @@ if [[ -d "$input" ]]; then
                 exit 1
             fi
         fi
-    done < <(find "$input" -type f | sort)
+    done
 elif [[ -f "$input" ]]; then
     process_file "$input"
     if [ $? -ne 0 ] && [ "$FAIL_ON_ERROR" = true ]; then
