@@ -4,16 +4,7 @@
 NEW_EXTENSION=""  # Keep original extension
 FAIL_ON_ERROR=true  # Exit on first error
 
-PROCESS_COMMAND='convert "$input" \
- -deskew 40% \
- -gravity center \
- -crop 2480x3508+0+0 \
- -level 10%,90%,1.0 \
- -sharpen 0x1 \
- -despeckle \
- -enhance \
- -trim +repage \
- "$output"'
+PROCESS_COMMAND='convert "$input" -deskew 40% -gravity center -crop 2480x3508+0+0 -level 10%,90%,1.0 -sharpen 0x1 -despeckle -enhance -trim +repage "$output"'
 
 # Check for required tools
 command -v convert >/dev/null 2>&1 || { echo >&2 "Error: imagemagick is not installed. Please install it and try again."; exit 1; }
